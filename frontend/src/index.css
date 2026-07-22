@@ -20,7 +20,7 @@ body,
 
 /* Visible focus indicator for keyboard users (req/UI_UX §14 Accessibility). */
 :focus-visible {
-  outline: 2px solid #1565c0;
+  outline: 2px solid #194391;
   outline-offset: 2px;
 }
 
