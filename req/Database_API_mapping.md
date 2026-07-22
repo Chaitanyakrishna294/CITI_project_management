@@ -187,9 +187,9 @@ Filters: `project_id`, `status`, `owner_id`, `q`.
 | Method | Path                | Roles                    |
 | ------ | ------------------- | ------------------------ |
 | GET    | `/resources`        | Any                      |
-| POST   | `/resources`        | Admin                    |
+| POST   | `/resources`        | Admin, Project Manager   |
 | GET    | `/resources/{id}`   | Any                      |
-| PUT    | `/resources/{id}`   | Admin                    |
+| PUT    | `/resources/{id}`   | Admin, Project Manager   |
 | GET    | `/allocations`      | Any                      |
 | POST   | `/allocations`      | Admin, project's manager |
 | PUT    | `/allocations/{id}` | Admin, project's manager |
@@ -204,13 +204,17 @@ matching PRD §9 ("Manage assigned projects") and the rule `projects-service` an
 `deliverables-service` already apply. For `PUT`/`DELETE` the project is resolved
 from the allocation's `project_id`. Admin is unrestricted.
 
-Resource *records* are Admin-only. A resource is org-wide master data with no
-project of its own, so PRD §9 gives a Project Manager no claim on it; and
-`weekly_capacity` is the ceiling the over-allocation guard enforces, so letting a
-Project Manager raise it would defeat that guard on a resource shared with other
-managers' projects. A Project Manager allocates resources, but does not create or
-edit them. The Resources page mirrors this: `canManage` is Admin-only, so the
-Add/Edit controls are hidden for everyone else.
+Resource *records* are managed by Admin and Project Manager. A PM staffs their
+own projects, so requiring an admin to add each person before they can be
+allocated would block routine work. Note the consequence: `weekly_capacity` is
+the ceiling the over-allocation guard compares against, and a resource is shared
+across projects, so a PM raising it affects every other manager's view of that
+person's availability. The guard still holds — allocations are rejected past
+capacity — but the ceiling itself is not restricted to Admin.
+
+The Resources page mirrors this: `canManage` covers Admin and Project Manager.
+Because `GET /users` is Admin-only, the create dialog shows a name picker to an
+Admin and a numeric **User ID** field to a Project Manager.
 
 ### Budgets — `budgets-service`
 

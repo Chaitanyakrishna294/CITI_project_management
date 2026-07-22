@@ -72,18 +72,20 @@ def test_admin_can_create_resource(make_user, auth_headers, db_conn):
     assert resource["title"] == "Dev"
 
 
-def test_pm_forbidden_to_create_resource(make_user, auth_headers):
-    """Resource records are org-wide master data, so they are Admin-only (PRD §9)."""
+def test_pm_can_create_resource(make_user, auth_headers):
+    """A PM staffs their own projects, so they can add a person as a resource
+    without waiting on an admin."""
     pm = make_user(role="project_manager")
     target = make_user(role="team_member")
     event = make_event(
         "POST",
         "/resources",
-        body={"user_id": target["id"]},
+        body={"user_id": target["id"], "title": "Engineer"},
         headers=auth_headers(pm),
     )
     resp = handler(event)
-    assert resp["statusCode"] == 403
+    assert resp["statusCode"] == 201
+    assert body_of(resp)["resource"]["user_id"] == target["id"]
 
 
 def test_non_manager_forbidden_to_create_resource(make_user, auth_headers):
@@ -221,9 +223,7 @@ def test_update_resource_forbidden_for_non_manager(make_user, auth_headers, db_c
     assert resp["statusCode"] == 403
 
 
-def test_pm_forbidden_to_raise_weekly_capacity(make_user, auth_headers, db_conn):
-    """weekly_capacity is the ceiling the over-allocation guard enforces, so a PM
-    must not be able to inflate it on a resource shared with other managers."""
+def test_pm_can_update_resource(make_user, auth_headers, db_conn):
     pm = make_user(role="project_manager")
     user1 = make_user(role="team_member")
     resource = _make_resource(db_conn, user1["id"], weekly_capacity=100)
@@ -231,15 +231,31 @@ def test_pm_forbidden_to_raise_weekly_capacity(make_user, auth_headers, db_conn)
     event = make_event(
         "PUT",
         f"/resources/{resource['id']}",
-        body={"weekly_capacity": 500},
+        body={"title": "Staff Engineer", "weekly_capacity": 80},
         headers=auth_headers(pm),
     )
     resp = handler(event)
-    assert resp["statusCode"] == 403
+    assert resp["statusCode"] == 200
 
     with db_conn.cursor() as cur:
-        cur.execute("SELECT weekly_capacity FROM resources WHERE id = %s", (resource["id"],))
-        assert float(cur.fetchone()["weekly_capacity"]) == 100.0
+        cur.execute("SELECT title, weekly_capacity FROM resources WHERE id = %s", (resource["id"],))
+        row = cur.fetchone()
+        assert row["title"] == "Staff Engineer"
+        assert float(row["weekly_capacity"]) == 80.0
+
+
+def test_finance_forbidden_to_create_resource(make_user, auth_headers):
+    """Only Admin and Project Manager manage resource records."""
+    finance = make_user(role="finance")
+    target = make_user(role="team_member")
+    event = make_event(
+        "POST",
+        "/resources",
+        body={"user_id": target["id"]},
+        headers=auth_headers(finance),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 403
 
 
 def test_update_resource_not_found(make_user, auth_headers):

@@ -13,9 +13,8 @@ Routes (relative to this Lambda's Function URL, e.g. /api/resources-service/...)
     DELETE /allocations/{id}
 
 Rules:
-    - Managing resource records: Admin only. A resource is org-wide master data with no
-      project of its own, and weekly_capacity is the ceiling the over-allocation guard
-      enforces, so a Project Manager must not be able to raise it.
+    - Managing resource records: Admin or Project Manager. PMs staff their own projects,
+      so they need to be able to add a person as a resource without waiting on an admin.
     - Managing allocations: Admin, or the manager of the project being allocated to
       (PRD §9 scopes a Project Manager to their assigned projects).
     - Reading resources/allocations: any authenticated role.
@@ -96,8 +95,8 @@ def _list_resources(event):
 
 
 def _create_resource(event, claims):
-    if not require_role(claims, {"admin"}):
-        return _response(403, {"error": "Admin role required"})
+    if not require_role(claims, MANAGER_ROLES):
+        return _response(403, {"error": "Admin or Project Manager role required"})
 
     try:
         body = json.loads(event.get("body") or "{}")
@@ -127,8 +126,8 @@ def _get_resource(resource_id):
 
 
 def _update_resource(event, claims, resource_id):
-    if not require_role(claims, {"admin"}):
-        return _response(403, {"error": "Admin role required"})
+    if not require_role(claims, MANAGER_ROLES):
+        return _response(403, {"error": "Admin or Project Manager role required"})
     if not get_resource(PG_CONFIG, resource_id):
         return _response(404, {"error": "Resource not found"})
 

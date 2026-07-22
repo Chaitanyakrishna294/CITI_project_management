@@ -61,9 +61,12 @@ export default function Resources() {
   const resources = result.resources;
   const error = loading ? '' : result.error;
 
-  // Resource records are org-wide master data, so creating/editing them is Admin-only
-  // (see backend/resources-service). Project Managers manage allocations, not resources.
-  const canManage = user?.role === 'admin';
+  // A PM staffs their own projects, so they can add and edit resource records
+  // alongside Admin (see backend/resources-service).
+  const canManage = user?.role === 'admin' || user?.role === 'project_manager';
+  // GET /users is Admin-only, so only an Admin can offer a name picker; a PM
+  // enters the user id directly.
+  const canPickUser = user?.role === 'admin';
   const filtered = Object.values(filters).some(Boolean);
   // Only the very first load gets the skeleton. Swapping the table out on every
   // refetch would unmount the filter controls the user is still typing into.
@@ -90,10 +93,10 @@ export default function Resources() {
   }, [filters, requestKey]);
 
   useEffect(() => {
-    if (canManage) {
+    if (canPickUser) {
       usersService.listUsers().then((data) => setUsers(data.users.filter((u) => u.is_active))).catch(() => {});
     }
-  }, [canManage]);
+  }, [canPickUser]);
 
   function updateFilter(key, value) {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -251,13 +254,22 @@ export default function Resources() {
             {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
 
             {!editingId && (
-              <TextField
-                select label="User" fullWidth required margin="dense"
-                value={form.user_id}
-                onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-              >
-                {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name} ({u.role})</MenuItem>)}
-              </TextField>
+              canPickUser ? (
+                <TextField
+                  select label="User" fullWidth required margin="dense"
+                  value={form.user_id}
+                  onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+                >
+                  {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name} ({u.role})</MenuItem>)}
+                </TextField>
+              ) : (
+                <TextField
+                  label="User ID" type="number" fullWidth required margin="dense"
+                  helperText="Enter the numeric user ID for this team member"
+                  value={form.user_id}
+                  onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+                />
+              )
             )}
 
             <TextField

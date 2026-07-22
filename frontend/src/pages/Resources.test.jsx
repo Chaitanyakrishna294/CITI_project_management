@@ -94,14 +94,12 @@ describe('Resources page', () => {
       expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     });
 
-    // Resource records are org-wide master data and Admin-only on the backend;
-    // a project_manager manages allocations, not the resource rows themselves.
-    it('hides "Add Resource" and "Edit" for project_manager', async () => {
+    it('shows "Add Resource" and per-row "Edit" for project_manager', async () => {
       mockList([resource1]);
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('Pat Manager');
-      expect(screen.queryByRole('button', { name: 'Add Resource' })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     });
 
     it('hides "Add Resource" and "Edit" for viewer', async () => {
@@ -128,9 +126,16 @@ describe('Resources page', () => {
       expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     });
 
-    it('offers the empty-state call to action only to admin', async () => {
+    it('offers the empty-state call to action to admin', async () => {
       mockList([]);
       renderWithAuth(<Resources />, { user: adminUser });
+      await screen.findByText('No resources yet');
+      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
+    });
+
+    it('offers the empty-state call to action to a project_manager', async () => {
+      mockList([]);
+      renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('No resources yet');
       expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
     });
@@ -314,8 +319,22 @@ describe('Resources page', () => {
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('No resources yet');
 
-      // GET /users is Admin-only, and a PM has no create dialog to populate.
+      // GET /users is Admin-only, so a PM must not call it.
       expect(usersService.listUsers).not.toHaveBeenCalled();
+    });
+
+    it('gives a project_manager a numeric User ID field instead of the name picker', async () => {
+      const user = userEvent.setup();
+      mockList([]);
+      renderWithAuth(<Resources />, { user: pmUser });
+      await screen.findByText('No resources yet');
+
+      await user.click(screen.getByRole('button', { name: 'Add Resource' }));
+      expect(await screen.findByRole('heading', { name: 'Add Resource' })).toBeInTheDocument();
+
+      // No name list is available to a PM, so the id is entered directly.
+      expect(screen.getByLabelText('User ID *')).toBeInTheDocument();
+      expect(screen.queryByLabelText('User *')).not.toBeInTheDocument();
     });
 
     it('hides any user-picker (select or text field) when editing an existing row', async () => {
