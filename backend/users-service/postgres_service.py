@@ -88,7 +88,7 @@ def update_user(config, user_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE users SET {set_clause}, updated_at = now() WHERE id = %s "
+                f"UPDATE users SET {set_clause}, updated_at = now() WHERE id = %s "  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 "RETURNING id, name, email, role, is_active, created_at, updated_at",
                 values,
             )

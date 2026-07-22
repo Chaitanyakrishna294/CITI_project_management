@@ -23,5 +23,26 @@ jobs:
       - name: Install Bandit
         run: pip3 install bandit
 
-      - name: Run Bandit
-        run: bandit -r ./backend
+      # Gating scan: fails the build on anything that could reach production.
+      #
+      # Test suites are excluded because pytest is built on bare `assert`, and
+      # B101 fires on every one of them -- 475 findings that are inherent to the
+      # framework, not defects. Leaving them in meant the check was permanently
+      # red, so a genuine High would have gone unnoticed. _examples/ is
+      # workshop scaffold that is never deployed (see backend/README.md).
+      #
+      # Everything else is scanned at full strength: all severities, all
+      # confidences. Individual false positives are annotated with `# nosec`
+      # plus a justification at the call site, so each exemption is reviewable
+      # in the diff rather than hidden behind a blanket skip.
+      - name: Run Bandit (application code)
+        run: |
+          bandit -r ./backend \
+            --exclude './backend/_examples,./backend/*/test_*.py,./backend/*/conftest.py'
+
+      # Non-gating: keeps test-suite findings visible without blocking merges.
+      - name: Run Bandit (test suites, informational)
+        continue-on-error: true
+        run: |
+          bandit -r ./backend --severity-level medium \
+            --exclude './backend/_examples'

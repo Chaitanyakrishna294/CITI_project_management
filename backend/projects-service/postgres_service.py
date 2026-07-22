@@ -143,7 +143,7 @@ def update_project(config, project_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE projects SET {set_clause}, updated_at = now() WHERE id = %s RETURNING id",
+                f"UPDATE projects SET {set_clause}, updated_at = now() WHERE id = %s RETURNING id",  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 values,
             )
             updated = cur.fetchone()

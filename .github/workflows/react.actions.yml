@@ -23,5 +23,19 @@ jobs:
       - name: Install npm dependencies
         run: npm install --prefix ./frontend
 
-      - name: Run npm audit
+      # Gating scan: production dependencies only -- these are what actually
+      # ship to the browser via the Vite bundle.
+      #
+      # The previous unscoped audit failed on advisories in vite/vitest/esbuild,
+      # which are devDependencies. They never reach the bundle, and the esbuild
+      # advisory in particular concerns the local dev server, not deployed code.
+      # Because the fix is a breaking major bump of the test runner, the check
+      # sat permanently red and stopped signalling anything.
+      - name: Run npm audit (production dependencies)
+        run: npm audit --prefix ./frontend --omit=dev --audit-level=high
+
+      # Non-gating: keeps devDependency advisories visible without blocking
+      # merges. Worth acting on, but on a deliberate upgrade, not mid-PR.
+      - name: Run npm audit (dev dependencies, informational)
+        continue-on-error: true
         run: npm audit --prefix ./frontend --audit-level=high

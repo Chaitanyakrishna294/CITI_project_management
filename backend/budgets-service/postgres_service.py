@@ -93,7 +93,7 @@ def update_budget(config, project_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE budgets SET {set_clause}, updated_at = now() WHERE project_id = %s",
+                f"UPDATE budgets SET {set_clause}, updated_at = now() WHERE project_id = %s",  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 values,
             )
         return get_budget_by_project(config, project_id)
