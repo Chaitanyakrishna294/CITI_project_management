@@ -65,6 +65,29 @@ Follow this dependency order when implementing or extending features (see `req/I
 
 See `req/UI_UX_Design&UserFlow.md` and `req/Application_Flow.md` for full navigation flows and screen specs.
 
+### Reuse these before writing new ones
+
+| Need | Use |
+| ---- | --- |
+| Colours, typography, 8px grid | `frontend/src/theme.js` — never hardcode hex; `STATUS_COLORS` for state, `CHART_COLORS` for series |
+| A table | `components/DataTable.jsx` — declarative columns, sorting, pagination, CSV export |
+| Loading / empty / error | `components/PageState.jsx` — `LoadingState`, `EmptyState`, `ErrorState` |
+| Confirming a destructive action | `components/ConfirmDialog.jsx` — never `window.confirm` |
+| A chart | `components/charts/` — `BarChart`, `DonutChart`, `LineChart` wrapped in `ChartFrame` (legend + data-table fallback) |
+| CSV output | `utils/csv.js` |
+
+Numeric columns from Postgres (`NUMERIC`) arrive as **strings** — wrap in `Number()` before any arithmetic or comparison.
+
+Data screens derive `loading` from a request key rather than calling `setState` synchronously inside an effect; the `react-hooks/set-state-in-effect` lint rule enforces this. Follow the pattern in `pages/Projects.jsx`.
+
+### Commands
+
+```sh
+./backend/run-tests.sh        # backend: one pytest process per service
+cd frontend && npm test       # frontend: Vitest + React Testing Library
+cd frontend && npm run lint   # must stay at zero errors
+```
+
 ---
 
 ## Model Selection Guide

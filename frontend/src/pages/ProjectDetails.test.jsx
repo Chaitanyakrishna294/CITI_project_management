@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { Routes, Route, useLocation } from 'react-router-dom';
-import { renderWithAuth, screen, waitFor } from '../test/test-utils';
+import { renderWithAuth, screen } from '../test/test-utils';
 import ProjectDetails from './ProjectDetails';
 import * as projectsService from '../services/projectsService';
 

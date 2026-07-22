@@ -27,9 +27,16 @@ const ROLES = ['admin', 'project_manager', 'team_member', 'finance', 'viewer'];
 const emptyForm = { name: '', email: '', password: '', role: 'viewer' };
 
 export default function UserManagement() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Bumping the token re-runs the fetch effect after a create/edit/deactivate.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  // The result carries the request it answers, so "loading" is derived rather
+  // than toggled — no state has to be written before the request is issued.
+  const [result, setResult] = useState({ key: null, users: [], error: '' });
+  const requestKey = String(reloadToken);
+  const loading = result.key !== requestKey;
+  const users = result.users;
+  const error = loading ? '' : result.error;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyForm);
@@ -38,22 +45,25 @@ export default function UserManagement() {
   const [editUser, setEditUser] = useState(null);
   const [editError, setEditError] = useState('');
 
-  async function loadUsers() {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await usersService.listUsers();
-      setUsers(data.users);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  function reloadUsers() {
+    setReloadToken((token) => token + 1);
   }
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    let active = true;
+    usersService
+      .listUsers()
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, users: data.users, error: '' });
+      })
+      .catch((err) => {
+        if (active) setResult((prev) => ({ key: requestKey, users: prev.users, error: err.message }));
+      });
+    return () => {
+      active = false;
+    };
+  }, [requestKey]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -62,7 +72,7 @@ export default function UserManagement() {
       await usersService.createUser(createForm);
       setCreateOpen(false);
       setCreateForm(emptyForm);
-      loadUsers();
+      reloadUsers();
     } catch (err) {
       setCreateError(err.message);
     }
@@ -78,7 +88,7 @@ export default function UserManagement() {
         is_active: editUser.is_active,
       });
       setEditUser(null);
-      loadUsers();
+      reloadUsers();
     } catch (err) {
       setEditError(err.message);
     }
@@ -87,7 +97,7 @@ export default function UserManagement() {
   async function handleDeactivate(id) {
     if (!window.confirm('Deactivate this user?')) return;
     await usersService.deactivateUser(id);
-    loadUsers();
+    reloadUsers();
   }
 
   return (

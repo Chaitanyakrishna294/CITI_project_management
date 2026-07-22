@@ -4,6 +4,68 @@ The goal of this coding workshop is to enable and assess the hands-on skills
 of participants through development of a practical technical solution that
 solves a theoretical business problem.
 
+## What This Repository Builds
+
+This participant repository implements the **ACME Project Management Platform** —
+a centralized replacement for spreadsheet- and email-based project tracking.
+The requirements that define it live in [`req/`](./req):
+
+| Document | Purpose |
+| -------- | ------- |
+| [PRD.md](./req/PRD.md) | Business objectives, roles, scope, business rules |
+| [TRD.md](./req/TRD.md) | Architecture, technology stack, security requirements |
+| [Application_Flow.md](./req/Application_Flow.md) | Functional and navigation flows |
+| [UI_UX_Design&UserFlow.md](./req/UI_UX_Design&UserFlow.md) | Screens UI-01 … UI-10, design system |
+| [Implementation_plan.md](./req/Implementation_plan.md) | Phased delivery plan |
+| [Database_API_mapping.md](./req/Database_API_mapping.md) | Tables → APIs → screens traceability |
+
+> The "Coding Workshop Example" below is the generic brief shipped with the
+> workshop template and describes a different sample problem. Where the two
+> disagree, `req/` is authoritative for this repository.
+
+### Layout
+
+```text
+backend/     One AWS Lambda service per module (auth, users, projects,
+             deliverables, resources, budgets) — see backend/README.md
+frontend/    React + Material UI single-page application — see frontend/README.md
+db/          PostgreSQL schema.sql and seed.sql
+req/         Requirements and design documents
+infra/       Terraform for the AWS Serverless deployment
+bin/         Setup, local development and deployment scripts
+```
+
+### Running Locally
+
+Start Postgres, the backend services and the frontend together:
+
+```sh
+./bin/start-dev.sh
+```
+
+Then load the schema and sample data:
+
+```sh
+psql "$POSTGRES_CONN" -f db/schema.sql && psql "$POSTGRES_CONN" -f db/seed.sql
+```
+
+The app is served at <http://localhost:3000>. Seeded demo accounts and their
+shared development password are listed at the top of [`db/seed.sql`](./db/seed.sql).
+
+### Running the Tests
+
+Backend (one pytest process per service — they share module names):
+
+```sh
+./backend/run-tests.sh
+```
+
+Frontend:
+
+```sh
+cd frontend && npm test
+```
+
 ## Getting Started
 
 Navigate to [Coding Workshop - Main Guide](./docs/README.md) to get started.

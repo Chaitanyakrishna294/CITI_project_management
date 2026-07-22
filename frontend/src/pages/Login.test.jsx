@@ -23,7 +23,7 @@ describe('Login page', () => {
   it('updates email and password fields as controlled inputs', async () => {
     renderLogin();
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = screen.getByLabelText(/^password/i);
 
     await userEvent.type(emailInput, 'user@example.com');
     await userEvent.type(passwordInput, 'mypassword');
@@ -32,12 +32,24 @@ describe('Login page', () => {
     expect(passwordInput).toHaveValue('mypassword');
   });
 
+  it('toggles password visibility when the show/hide icon is clicked', async () => {
+    renderLogin();
+    const passwordInput = screen.getByLabelText(/^password/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await userEvent.click(screen.getByRole('button', { name: /show password/i }));
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    await userEvent.click(screen.getByRole('button', { name: /hide password/i }));
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
+
   it('submitting with valid credentials calls login and navigates to /dashboard', async () => {
     const login = vi.fn().mockResolvedValue({ id: 1, name: 'Ann', role: 'admin' });
     renderLogin({ login });
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'mypassword');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
     await userEvent.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => expect(login).toHaveBeenCalledWith('user@example.com', 'mypassword'));
@@ -49,7 +61,7 @@ describe('Login page', () => {
     renderLogin({ login });
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'wrongpass');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'wrongpass');
     await userEvent.click(screen.getByRole('button', { name: /login/i }));
 
     expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
@@ -64,7 +76,7 @@ describe('Login page', () => {
     renderLogin({ login });
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'mypassword');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
 
     const submitButton = screen.getByRole('button', { name: /login/i });
     await userEvent.click(submitButton);
@@ -85,7 +97,7 @@ describe('Login page', () => {
     renderLogin({ login });
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'mypassword');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
 
     const submitButton = screen.getByRole('button', { name: /login/i });
     await userEvent.click(submitButton);

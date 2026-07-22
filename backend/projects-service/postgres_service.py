@@ -18,7 +18,12 @@ def get_connection(config):
 
 
 def list_projects(config, filters):
-    """filters: dict subset of {status, manager_id, department, date_from, date_to, q}"""
+    """filters: dict subset of
+    {status, manager_id, department, date_from, date_to, budget_min, budget_max, q}
+
+    Every filter in req/Application_Flow.md §9 is supported here: status,
+    department, project manager, budget and date range, plus free-text search.
+    """
     global PG_CONN
     where = []
     params = []
@@ -38,6 +43,15 @@ def list_projects(config, filters):
     if filters.get("date_to"):
         where.append("p.end_date <= %s")
         params.append(filters["date_to"])
+    # Budget bounds read from the joined budget row. A project with no budget
+    # yet has a NULL planned_amount, so it is excluded once a bound is set --
+    # "projects budgeted over 100k" should not surface unbudgeted projects.
+    if filters.get("budget_min") is not None:
+        where.append("b.planned_amount >= %s")
+        params.append(filters["budget_min"])
+    if filters.get("budget_max") is not None:
+        where.append("b.planned_amount <= %s")
+        params.append(filters["budget_max"])
     if filters.get("q"):
         where.append("(p.name ILIKE %s OR p.description ILIKE %s)")
         like = f"%{filters['q']}%"
@@ -46,8 +60,11 @@ def list_projects(config, filters):
     query = (
         "SELECT p.id, p.name, p.description, p.status, p.manager_id, "
         "u.name AS manager_name, p.department, p.start_date, p.end_date, "
+        "b.planned_amount, b.actual_spend, "
         "p.created_at, p.updated_at "
-        "FROM projects p JOIN users u ON u.id = p.manager_id"
+        "FROM projects p "
+        "JOIN users u ON u.id = p.manager_id "
+        "LEFT JOIN budgets b ON b.project_id = p.id"
     )
     if where:
         query += " WHERE " + " AND ".join(where)

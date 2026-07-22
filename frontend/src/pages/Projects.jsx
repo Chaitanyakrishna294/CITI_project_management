@@ -1,26 +1,31 @@
+/**
+ * UI-03 Projects.
+ *
+ * req/Application_Flow.md §9 requires Status, Department, Project Manager,
+ * Budget and Date Range filters; req/UI_UX_Design&UserFlow.md §12 requires
+ * sorting, pagination and CSV export on every table (all three come from
+ * components/DataTable) and §15/§16 the shared loading/empty/error states and a
+ * confirmation dialog before anything destructive.
+ */
 import { useEffect, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
-import Link from '@mui/material/Link';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
-import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
+import ConfirmDialog from '../components/ConfirmDialog';
+import DataTable from '../components/DataTable';
+import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,45 +35,86 @@ const STATUS_COLOR = { active: 'success', completed: 'default', delayed: 'warnin
 
 const emptyForm = { name: '', description: '', department: '', manager_id: '', start_date: '', end_date: '' };
 
+const emptyFilters = {
+  status: '',
+  department: '',
+  manager_id: '',
+  q: '',
+  budget_min: '',
+  budget_max: '',
+  date_from: '',
+  date_to: '',
+};
+
+/**
+ * A blank control means "no bound", so blank keys are dropped rather than sent
+ * as empty strings. projectsService.listProjects also skips falsy values, so
+ * this is belt-and-braces — but it keeps the mocked call args in tests honest
+ * about what actually reaches the API.
+ */
+function activeFilters(filters) {
+  return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== '' && value != null));
+}
+
+/** planned_amount is NUMERIC (a string over the wire) and null with no budget. */
+function formatBudget(value) {
+  if (value == null || value === '') return '—';
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '—';
+  return amount.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+}
+
 export default function Projects() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const [projects, setProjects] = useState([]);
   const [managers, setManagers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  const [filters, setFilters] = useState({
-    status: '',
-    department: '',
-    manager_id: '',
-    q: searchParams.get('q') || '',
-  });
+  const [filters, setFilters] = useState({ ...emptyFilters, q: searchParams.get('q') || '' });
+
+  // Bumping the token re-runs the fetch effect after a create/edit/archive.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  // The result carries the request it answers, so "loading" is derived rather
+  // than toggled — no state has to be written before the request is issued.
+  const [result, setResult] = useState({ key: null, projects: [], error: '' });
+  const requestKey = JSON.stringify({ ...filters, reloadToken });
+  const loading = result.key !== requestKey;
+  const projects = result.projects;
+  const error = loading ? '' : result.error;
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
 
-  const canCreate = user?.role === 'admin' || user?.role === 'project_manager';
+  // The project the archive confirmation is currently asking about.
+  const [archiveTarget, setArchiveTarget] = useState(null);
 
-  async function loadProjects() {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await projectsService.listProjects(filters);
-      setProjects(data.projects);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const canCreate = user?.role === 'admin' || user?.role === 'project_manager';
+  const filtered = Object.values(filters).some(Boolean);
+  // Only the very first load gets the skeleton. Swapping the table out on every
+  // refetch would unmount the filter controls the user is still typing into.
+  const showSkeleton = loading && result.key === null;
+
+  function reloadProjects() {
+    setReloadToken((token) => token + 1);
   }
 
   useEffect(() => {
-    loadProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+    let active = true;
+    projectsService
+      .listProjects(activeFilters(filters))
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, projects: data.projects, error: '' });
+      })
+      .catch((err) => {
+        if (active) setResult((prev) => ({ key: requestKey, projects: prev.projects, error: err.message }));
+      });
+    return () => {
+      active = false;
+    };
+  }, [filters, requestKey]);
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -78,6 +124,10 @@ export default function Projects() {
         .catch(() => {});
     }
   }, [user]);
+
+  function updateFilter(key, value) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
 
   function openCreate() {
     setEditingId(null);
@@ -114,115 +164,182 @@ export default function Projects() {
         await projectsService.createProject(form);
       }
       setFormOpen(false);
-      loadProjects();
+      reloadProjects();
     } catch (err) {
       setFormError(err.message);
     }
   }
 
-  async function handleArchive(id) {
-    if (!window.confirm('Archive this project? It will no longer accept new deliverables.')) return;
-    await projectsService.archiveProject(id);
-    loadProjects();
+  // ConfirmDialog surfaces a rejection inline, so no try/catch here.
+  async function handleArchive() {
+    await projectsService.archiveProject(archiveTarget.id);
+    reloadProjects();
   }
 
-  return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" component="h1">
-          Projects
-        </Typography>
-        {canCreate && (
-          <Button variant="contained" onClick={openCreate}>
-            New Project
-          </Button>
-        )}
-      </Box>
+  const columns = [
+    {
+      id: 'name',
+      label: 'Name',
+      render: (p) => (
+        <Link component={RouterLink} to={`/projects/${p.id}`} underline="hover">
+          {p.name}
+        </Link>
+      ),
+    },
+    { id: 'manager_name', label: 'Manager' },
+    { id: 'department', label: 'Department', render: (p) => p.department || '—' },
+    {
+      id: 'status',
+      label: 'Status',
+      render: (p) => <Chip size="small" color={STATUS_COLOR[p.status]} label={p.status} />,
+    },
+    {
+      id: 'planned_amount',
+      label: 'Budget',
+      align: 'right',
+      // Nulls sort last in DataTable, which is right for "no budget yet".
+      sortValue: (p) => (p.planned_amount == null ? null : Number(p.planned_amount)),
+      exportValue: (p) => (p.planned_amount == null ? '' : String(p.planned_amount)),
+      render: (p) => formatBudget(p.planned_amount),
+    },
+    { id: 'start_date', label: 'Start', render: (p) => p.start_date || '—' },
+    { id: 'end_date', label: 'End', render: (p) => p.end_date || '—' },
+    {
+      id: 'actions',
+      label: 'Actions',
+      align: 'right',
+      sortable: false,
+      exportable: false,
+      render: (p) =>
+        canManage(p) ? (
+          <>
+            <Button size="small" onClick={() => openEdit(p)}>
+              Edit
+            </Button>
+            {p.status !== 'archived' && (
+              <Button size="small" color="error" onClick={() => setArchiveTarget(p)}>
+                Archive
+              </Button>
+            )}
+          </>
+        ) : null,
+    },
+  ];
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+  // Grouped in pairs so the six controls stay legible when the main column
+  // collapses to roughly 360px on mobile.
+  const toolbar = (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flexGrow: 1 }}>
+      <TextField
+        label="Search" size="small" sx={{ minWidth: 200, flexGrow: 1 }}
+        placeholder="Search by name or description"
+        value={filters.q}
+        onChange={(e) => updateFilter('q', e.target.value)}
+      />
+      <Stack direction="row" spacing={2}>
         <TextField
-          label="Search" size="small" sx={{ minWidth: 220 }}
-          placeholder="Search by name or description"
-          value={filters.q}
-          onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-        />
-        <TextField
-          select label="Status" size="small" sx={{ minWidth: 160 }}
+          select label="Status" size="small" sx={{ minWidth: 130 }}
           value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+          onChange={(e) => updateFilter('status', e.target.value)}
         >
           <MenuItem value="">All</MenuItem>
           {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
         </TextField>
         <TextField
-          label="Department" size="small"
+          label="Department" size="small" sx={{ minWidth: 130 }}
           value={filters.department}
-          onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+          onChange={(e) => updateFilter('department', e.target.value)}
         />
-        {managers.length > 0 && (
-          <TextField
-            select label="Manager" size="small" sx={{ minWidth: 180 }}
-            value={filters.manager_id}
-            onChange={(e) => setFilters({ ...filters, manager_id: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            {managers.map((m) => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}
-          </TextField>
-        )}
       </Stack>
+      {managers.length > 0 && (
+        <TextField
+          select label="Manager" size="small" sx={{ minWidth: 160 }}
+          value={filters.manager_id}
+          onChange={(e) => updateFilter('manager_id', e.target.value)}
+        >
+          <MenuItem value="">All</MenuItem>
+          {managers.map((m) => <MenuItem key={m.id} value={m.id}>{m.name}</MenuItem>)}
+        </TextField>
+      )}
+      <Stack direction="row" spacing={2}>
+        <TextField
+          label="Min Budget" type="number" size="small" sx={{ minWidth: 130 }}
+          value={filters.budget_min}
+          onChange={(e) => updateFilter('budget_min', e.target.value)}
+        />
+        <TextField
+          label="Max Budget" type="number" size="small" sx={{ minWidth: 130 }}
+          value={filters.budget_max}
+          onChange={(e) => updateFilter('budget_max', e.target.value)}
+        />
+      </Stack>
+      <Stack direction="row" spacing={2}>
+        {/* Backend semantics: start_date >= date_from, end_date <= date_to. */}
+        <TextField
+          label="Start From" type="date" size="small" sx={{ minWidth: 150 }}
+          slotProps={{ inputLabel: { shrink: true } }}
+          value={filters.date_from}
+          onChange={(e) => updateFilter('date_from', e.target.value)}
+        />
+        <TextField
+          label="End By" type="date" size="small" sx={{ minWidth: 150 }}
+          slotProps={{ inputLabel: { shrink: true } }}
+          value={filters.date_to}
+          onChange={(e) => updateFilter('date_to', e.target.value)}
+        />
+      </Stack>
+    </Box>
+  );
 
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+  return (
+    <Box>
+      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
+        Projects
+      </Typography>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Manager</TableCell>
-              <TableCell>Department</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Start</TableCell>
-              <TableCell>End</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {!loading && projects.map((p) => (
-              <TableRow key={p.id}>
-                <TableCell>
-                  <Link component={RouterLink} to={`/projects/${p.id}`} underline="hover">
-                    {p.name}
-                  </Link>
-                </TableCell>
-                <TableCell>{p.manager_name}</TableCell>
-                <TableCell>{p.department || '—'}</TableCell>
-                <TableCell>
-                  <Chip size="small" color={STATUS_COLOR[p.status]} label={p.status} />
-                </TableCell>
-                <TableCell>{p.start_date || '—'}</TableCell>
-                <TableCell>{p.end_date || '—'}</TableCell>
-                <TableCell align="right">
-                  {canManage(p) && (
-                    <>
-                      <Button size="small" onClick={() => openEdit(p)}>Edit</Button>
-                      {p.status !== 'archived' && (
-                        <Button size="small" color="error" onClick={() => handleArchive(p.id)}>
-                          Archive
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-            {!loading && projects.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} align="center">No projects yet.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {showSkeleton && <LoadingState variant="table" label="Loading projects…" />}
+
+      {!showSkeleton && error && (
+        <ErrorState title="Could not load projects" error={error} onRetry={reloadProjects} />
+      )}
+
+      {/* With no filters applied there is nothing to filter, so the toolbar can
+          go and the §15 call to action takes the whole screen. */}
+      {!showSkeleton && !error && projects.length === 0 && !filtered && (
+        <EmptyState
+          title="No projects yet"
+          message="Create a project to start tracking its deliverables, resources and budget."
+          actionLabel={canCreate ? 'New Project' : undefined}
+          onAction={canCreate ? openCreate : undefined}
+        />
+      )}
+
+      {!showSkeleton && !error && (projects.length > 0 || filtered) && (
+        <DataTable
+          columns={columns}
+          rows={projects}
+          defaultOrderBy="name"
+          exportFilename="projects.csv"
+          emptyMessage="No projects match these filters."
+          toolbar={toolbar}
+          actions={
+            canCreate ? (
+              <Button variant="contained" onClick={openCreate}>
+                New Project
+              </Button>
+            ) : null
+          }
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(archiveTarget)}
+        title="Archive this project?"
+        message="It will no longer accept new deliverables."
+        confirmLabel="Archive"
+        onConfirm={handleArchive}
+        onClose={() => setArchiveTarget(null)}
+      />
 
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} fullWidth maxWidth="sm">
         <Box component="form" onSubmit={handleSubmit}>
@@ -265,13 +382,13 @@ export default function Projects() {
             <Stack direction="row" spacing={2}>
               <TextField
                 label="Start Date" type="date" fullWidth margin="dense"
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 value={form.start_date}
                 onChange={(e) => setForm({ ...form, start_date: e.target.value })}
               />
               <TextField
                 label="End Date" type="date" fullWidth margin="dense"
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ inputLabel: { shrink: true } }}
                 value={form.end_date}
                 onChange={(e) => setForm({ ...form, end_date: e.target.value })}
               />

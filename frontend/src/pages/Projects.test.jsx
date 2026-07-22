@@ -1,12 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { renderWithAuth, screen, waitFor, within } from '../test/test-utils';
+import { renderWithAuth, fireEvent, screen, waitFor, within } from '../test/test-utils';
 import Projects from './Projects';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
+import { downloadCsv } from '../utils/csv';
 
 vi.mock('../services/projectsService');
 vi.mock('../services/usersService');
+
+// Only the download is stubbed — toCsv still runs, so the assertions below
+// exercise the real column contract (exportValue, exportable: false).
+vi.mock('../utils/csv', async (importOriginal) => ({
+  ...(await importOriginal()),
+  downloadCsv: vi.fn(),
+}));
 
 const adminUser = { id: 1, name: 'Ada Admin', role: 'admin' };
 const pmUser = { id: 2, name: 'Pat Manager', role: 'project_manager' };
@@ -21,6 +29,8 @@ const project1 = {
   status: 'active',
   start_date: '2026-01-01',
   end_date: '2026-06-01',
+  planned_amount: null,
+  actual_spend: null,
 };
 const project2 = {
   id: 11,
@@ -31,10 +41,23 @@ const project2 = {
   status: 'archived',
   start_date: '2025-01-01',
   end_date: '2025-06-01',
+  planned_amount: null,
+  actual_spend: null,
 };
 
 function mockList(projects) {
   projectsService.listProjects.mockResolvedValue({ projects });
+}
+
+/** First-cell text of every body row, in the order the table renders them. */
+function bodyRowNames() {
+  const [, ...bodyRows] = screen.getAllByRole('row');
+  return bodyRows.map((row) => within(row).getAllByRole('cell')[0].textContent);
+}
+
+/** Latest filter object handed to the service. */
+function lastListCall() {
+  return projectsService.listProjects.mock.calls.at(-1)[0];
 }
 
 beforeEach(() => {
@@ -44,10 +67,31 @@ beforeEach(() => {
 });
 
 describe('Projects page', () => {
-  it('shows "No projects yet." when the list is empty', async () => {
+  it('shows the empty state when the list is empty', async () => {
     mockList([]);
     renderWithAuth(<Projects />, { user: viewerUser });
-    expect(await screen.findByText('No projects yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No projects yet')).toBeInTheDocument();
+  });
+
+  it('shows a skeleton loading state while the list is being fetched', () => {
+    projectsService.listProjects.mockReturnValue(new Promise(() => {}));
+    renderWithAuth(<Projects />, { user: viewerUser });
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByText('No projects yet')).not.toBeInTheDocument();
+  });
+
+  it('shows a retryable error state when the fetch fails', async () => {
+    const user = userEvent.setup();
+    projectsService.listProjects.mockRejectedValue(new Error('Network down'));
+    renderWithAuth(<Projects />, { user: viewerUser });
+
+    expect(await screen.findByText('Could not load projects')).toBeInTheDocument();
+    expect(screen.getByText('Network down')).toBeInTheDocument();
+
+    mockList([project1]);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Website Revamp')).toBeInTheDocument();
   });
 
   it('renders a row per project with name/manager/department/status/dates', async () => {
@@ -70,78 +114,293 @@ describe('Projects page', () => {
     expect(within(row2).getByText('archived')).toBeInTheDocument();
   });
 
-  it('shows "New Project" button for admin and project_manager roles', async () => {
-    mockList([]);
-    renderWithAuth(<Projects />, { user: adminUser });
-    expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
-  });
+  describe('budget column', () => {
+    it('formats planned_amount as currency', async () => {
+      mockList([{ ...project1, planned_amount: '125000.00' }]);
+      renderWithAuth(<Projects />, { user: viewerUser });
 
-  it('shows "New Project" button for project_manager', async () => {
-    mockList([]);
-    renderWithAuth(<Projects />, { user: pmUser });
-    expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
-  });
-
-  it('hides "New Project" button for viewer', async () => {
-    mockList([]);
-    renderWithAuth(<Projects />, { user: viewerUser });
-    await screen.findByText('No projects yet.');
-    expect(screen.queryByRole('button', { name: 'New Project' })).not.toBeInTheDocument();
-  });
-
-  it('shows the manager filter dropdown only for admin users', async () => {
-    mockList([]);
-    usersService.listUsers.mockResolvedValue({
-      users: [
-        { id: 2, name: 'Pat Manager', role: 'project_manager', is_active: true },
-        { id: 5, name: 'Amy Admin2', role: 'admin', is_active: true },
-      ],
+      const row = (await screen.findByText('Website Revamp')).closest('tr');
+      expect(within(row).getByText(/125,000/)).toBeInTheDocument();
     });
-    renderWithAuth(<Projects />, { user: adminUser });
-    await screen.findByText('No projects yet.');
-    expect(await screen.findByLabelText('Manager')).toBeInTheDocument();
-  });
 
-  it('does not show the manager filter dropdown for non-admin users', async () => {
-    mockList([]);
-    renderWithAuth(<Projects />, { user: pmUser });
-    await screen.findByText('No projects yet.');
-    expect(usersService.listUsers).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText('Manager')).not.toBeInTheDocument();
-  });
+    it('renders an em dash when the project has no budget yet', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
 
-  it('triggers a new listProjects call with updated filters when typing in search', async () => {
-    const user = userEvent.setup();
-    mockList([]);
-    renderWithAuth(<Projects />, { user: viewerUser });
-    await screen.findByText('No projects yet.');
-    projectsService.listProjects.mockClear();
-
-    const search = screen.getByLabelText('Search');
-    await user.type(search, 'abc');
-
-    await waitFor(() => {
-      expect(projectsService.listProjects).toHaveBeenCalledWith(
-        expect.objectContaining({ q: 'abc' })
-      );
+      const row = (await screen.findByText('Website Revamp')).closest('tr');
+      // Department and both dates are populated, so the only dash is the budget.
+      expect(within(row).getByText('—')).toBeInTheDocument();
     });
   });
 
-  it('triggers a new listProjects call with updated filters when changing status', async () => {
-    const user = userEvent.setup();
-    mockList([]);
-    renderWithAuth(<Projects />, { user: viewerUser });
-    await screen.findByText('No projects yet.');
-    projectsService.listProjects.mockClear();
+  describe('"New Project" button visibility', () => {
+    it('shows "New Project" for admin', async () => {
+      mockList([]);
+      renderWithAuth(<Projects />, { user: adminUser });
+      expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
+    });
 
-    await user.click(screen.getByLabelText('Status'));
-    const option = await screen.findByRole('option', { name: 'active' });
-    await user.click(option);
+    it('shows "New Project" for project_manager', async () => {
+      mockList([]);
+      renderWithAuth(<Projects />, { user: pmUser });
+      expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
+    });
 
-    await waitFor(() => {
-      expect(projectsService.listProjects).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'active' })
-      );
+    it('hides "New Project" for viewer', async () => {
+      mockList([]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('No projects yet');
+      expect(screen.queryByRole('button', { name: 'New Project' })).not.toBeInTheDocument();
+    });
+
+    it('offers "New Project" from the table toolbar once projects exist', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: adminUser });
+      await screen.findByText('Website Revamp');
+      expect(screen.getByRole('button', { name: 'New Project' })).toBeInTheDocument();
+    });
+
+    it('hides the toolbar "New Project" from a viewer once projects exist', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+      expect(screen.queryByRole('button', { name: 'New Project' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('filters', () => {
+    it('shows the manager filter dropdown only for admin users', async () => {
+      mockList([project1]);
+      usersService.listUsers.mockResolvedValue({
+        users: [
+          { id: 2, name: 'Pat Manager', role: 'project_manager', is_active: true },
+          { id: 5, name: 'Amy Admin2', role: 'admin', is_active: true },
+        ],
+      });
+      renderWithAuth(<Projects />, { user: adminUser });
+      await screen.findByText('Website Revamp');
+      expect(await screen.findByLabelText('Manager')).toBeInTheDocument();
+    });
+
+    it('does not show the manager filter dropdown for non-admin users', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: pmUser });
+      await screen.findByText('Website Revamp');
+      expect(usersService.listUsers).not.toHaveBeenCalled();
+      expect(screen.queryByLabelText('Manager')).not.toBeInTheDocument();
+    });
+
+    it('omits every blank filter from the request', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      expect(projectsService.listProjects).toHaveBeenCalledWith({});
+    });
+
+    it('triggers a new listProjects call with updated filters when typing in search', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+      projectsService.listProjects.mockClear();
+
+      await user.type(screen.getByLabelText('Search'), 'abc');
+
+      await waitFor(() => {
+        expect(projectsService.listProjects).toHaveBeenCalledWith(
+          expect.objectContaining({ q: 'abc' })
+        );
+      });
+    });
+
+    it('triggers a new listProjects call with updated filters when changing status', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+      projectsService.listProjects.mockClear();
+
+      await user.click(screen.getByLabelText('Status'));
+      const option = await screen.findByRole('option', { name: 'active' });
+      await user.click(option);
+
+      await waitFor(() => {
+        expect(projectsService.listProjects).toHaveBeenCalledWith(
+          expect.objectContaining({ status: 'active' })
+        );
+      });
+    });
+
+    it('sends the department filter', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+      projectsService.listProjects.mockClear();
+
+      await user.type(screen.getByLabelText('Department'), 'IT');
+
+      await waitFor(() => {
+        expect(projectsService.listProjects).toHaveBeenCalledWith(
+          expect.objectContaining({ department: 'IT' })
+        );
+      });
+    });
+
+    it('sends the manager filter', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      usersService.listUsers.mockResolvedValue({
+        users: [{ id: 2, name: 'Pat Manager', role: 'project_manager', is_active: true }],
+      });
+      renderWithAuth(<Projects />, { user: adminUser });
+      await screen.findByLabelText('Manager');
+      projectsService.listProjects.mockClear();
+
+      await user.click(screen.getByLabelText('Manager'));
+      await user.click(await screen.findByRole('option', { name: 'Pat Manager' }));
+
+      await waitFor(() => {
+        expect(projectsService.listProjects).toHaveBeenCalledWith(
+          expect.objectContaining({ manager_id: 2 })
+        );
+      });
+    });
+
+    it('sends budget_min and budget_max, and nothing else, when only the budget bounds are set', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      await user.type(screen.getByLabelText('Min Budget'), '1000');
+      await waitFor(() => {
+        expect(lastListCall()).toEqual({ budget_min: '1000' });
+      });
+
+      await user.type(screen.getByLabelText('Max Budget'), '5000');
+      await waitFor(() => {
+        expect(lastListCall()).toEqual({ budget_min: '1000', budget_max: '5000' });
+      });
+    });
+
+    it('sends date_from and date_to from the date range fields', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      fireEvent.change(screen.getByLabelText('Start From'), { target: { value: '2026-01-01' } });
+      await waitFor(() => {
+        expect(lastListCall()).toEqual({ date_from: '2026-01-01' });
+      });
+
+      fireEvent.change(screen.getByLabelText('End By'), { target: { value: '2026-12-31' } });
+      await waitFor(() => {
+        expect(lastListCall()).toEqual({ date_from: '2026-01-01', date_to: '2026-12-31' });
+      });
+    });
+
+    it('keeps the filter toolbar reachable when a filter matches nothing', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      mockList([]);
+      await user.type(screen.getByLabelText('Search'), 'zzz');
+
+      expect(await screen.findByText('No projects match these filters.')).toBeInTheDocument();
+      // The user must still be able to clear the filter that emptied the table.
+      expect(screen.getByLabelText('Search')).toHaveValue('zzz');
+    });
+  });
+
+  describe('sorting and pagination', () => {
+    it('sorts by name ascending by default and toggles to descending', async () => {
+      const user = userEvent.setup();
+      mockList([project1, project2]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      expect(bodyRowNames()).toEqual(['Data Migration', 'Website Revamp']);
+
+      await user.click(screen.getByRole('button', { name: /name/i }));
+      expect(bodyRowNames()).toEqual(['Website Revamp', 'Data Migration']);
+    });
+
+    it('sorts the Budget column numerically, not lexicographically', async () => {
+      const user = userEvent.setup();
+      mockList([
+        { ...project1, id: 1, name: 'Alpha', planned_amount: '1000.00' },
+        { ...project1, id: 2, name: 'Beta', planned_amount: '250.00' },
+        { ...project1, id: 3, name: 'Gamma', planned_amount: '90.00' },
+      ]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Alpha');
+
+      await user.click(screen.getByRole('button', { name: /budget/i }));
+
+      // Lexicographic order would put '1000.00' first.
+      expect(bodyRowNames()).toEqual(['Gamma', 'Beta', 'Alpha']);
+    });
+
+    it('paginates at ten rows and shows the rest on the next page', async () => {
+      const user = userEvent.setup();
+      const many = Array.from({ length: 12 }, (_, i) => ({
+        ...project2,
+        id: 100 + i,
+        name: `Project ${String(i + 1).padStart(2, '0')}`,
+      }));
+      mockList(many);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Project 01');
+
+      expect(bodyRowNames()).toHaveLength(10);
+      expect(screen.queryByText('Project 11')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+
+      expect(bodyRowNames()).toEqual(['Project 11', 'Project 12']);
+    });
+  });
+
+  describe('CSV export', () => {
+    it('exports the rows to projects.csv, without the actions column', async () => {
+      const user = userEvent.setup();
+      mockList([{ ...project1, planned_amount: '125000.00' }, project2]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      await user.click(screen.getByRole('button', { name: /export/i }));
+
+      expect(downloadCsv).toHaveBeenCalledTimes(1);
+      const [filename, csv] = downloadCsv.mock.calls[0];
+      expect(filename).toBe('projects.csv');
+      expect(csv.split('\n')[0]).toBe('Name,Manager,Department,Status,Budget,Start,End');
+      // The raw amount is exported, not the currency-formatted cell.
+      expect(csv).toContain('Website Revamp,Pat Manager,Marketing,active,125000.00,2026-01-01,2026-06-01');
+      // planned_amount is null for project2, so the Budget cell exports blank.
+      expect(csv).toContain('Data Migration,Other Manager,IT,archived,,2025-01-01,2025-06-01');
+    });
+
+    it('exports only the rows the current filters matched', async () => {
+      const user = userEvent.setup();
+      mockList([project1, project2]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+
+      mockList([project1]);
+      await user.type(screen.getByLabelText('Search'), 'Web');
+      await waitFor(() => {
+        expect(screen.queryByText('Data Migration')).not.toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('button', { name: /export/i }));
+
+      const csv = downloadCsv.mock.calls[0][1];
+      expect(csv).toContain('Website Revamp');
+      expect(csv).not.toContain('Data Migration');
     });
   });
 
@@ -150,7 +409,7 @@ describe('Projects page', () => {
       const user = userEvent.setup();
       mockList([]);
       renderWithAuth(<Projects />, { user: pmUser });
-      await screen.findByText('No projects yet.');
+      await screen.findByText('No projects yet');
 
       await user.click(screen.getByRole('button', { name: 'New Project' }));
 
@@ -167,12 +426,14 @@ describe('Projects page', () => {
         users: [{ id: 2, name: 'Pat Manager', role: 'project_manager', is_active: true }],
       });
       renderWithAuth(<Projects />, { user: adminUser });
-      await screen.findByText('No projects yet.');
+      await screen.findByText('No projects yet');
 
       await user.click(screen.getByRole('button', { name: 'New Project' }));
       expect(await screen.findByRole('heading', { name: 'New Project' })).toBeInTheDocument();
 
-      const managerField = screen.getByLabelText('Manager');
+      // The admin's dialog field is a required select, so its label carries the
+      // asterisk — distinguishing it from the optional toolbar filter.
+      const managerField = screen.getByLabelText('Manager *');
       expect(managerField).not.toBeDisabled();
       await user.click(managerField);
       expect(await screen.findByRole('option', { name: /Pat Manager/ })).toBeInTheDocument();
@@ -183,7 +444,7 @@ describe('Projects page', () => {
       mockList([]);
       projectsService.createProject.mockResolvedValue({ project: { id: 20 } });
       renderWithAuth(<Projects />, { user: pmUser });
-      await screen.findByText('No projects yet.');
+      await screen.findByText('No projects yet');
 
       await user.click(screen.getByRole('button', { name: 'New Project' }));
       await screen.findByRole('heading', { name: 'New Project' });
@@ -210,7 +471,7 @@ describe('Projects page', () => {
       mockList([]);
       projectsService.createProject.mockRejectedValue(new Error('Name already taken'));
       renderWithAuth(<Projects />, { user: pmUser });
-      await screen.findByText('No projects yet.');
+      await screen.findByText('No projects yet');
 
       await user.click(screen.getByRole('button', { name: 'New Project' }));
       await screen.findByRole('heading', { name: 'New Project' });
@@ -226,7 +487,7 @@ describe('Projects page', () => {
       const user = userEvent.setup();
       mockList([]);
       renderWithAuth(<Projects />, { user: adminUser });
-      await screen.findByText('No projects yet.');
+      await screen.findByText('No projects yet');
 
       await user.click(screen.getByRole('button', { name: 'New Project' }));
       await screen.findByRole('heading', { name: 'New Project' });
@@ -284,35 +545,74 @@ describe('Projects page', () => {
   });
 
   describe('archive action', () => {
-    it('confirmed archive calls window.confirm then archiveProject and reloads', async () => {
+    async function openArchiveDialog(user) {
+      await user.click(screen.getByRole('button', { name: 'Archive' }));
+      return screen.findByRole('dialog');
+    }
+
+    it('opens a themed confirmation dialog instead of window.confirm', async () => {
       const user = userEvent.setup();
       mockList([project1]);
-      projectsService.archiveProject.mockResolvedValue({});
       const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
       renderWithAuth(<Projects />, { user: adminUser });
       await screen.findByText('Website Revamp');
 
-      projectsService.listProjects.mockClear();
-      await user.click(screen.getByRole('button', { name: 'Archive' }));
+      const dialog = await openArchiveDialog(user);
 
-      expect(confirmSpy).toHaveBeenCalled();
+      expect(within(dialog).getByText('Archive this project?')).toBeInTheDocument();
+      expect(within(dialog).getByText('It will no longer accept new deliverables.')).toBeInTheDocument();
+      expect(confirmSpy).not.toHaveBeenCalled();
+      expect(projectsService.archiveProject).not.toHaveBeenCalled();
+      confirmSpy.mockRestore();
+    });
+
+    it('confirming the dialog calls archiveProject, closes it and reloads', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      projectsService.archiveProject.mockResolvedValue({});
+      renderWithAuth(<Projects />, { user: adminUser });
+      await screen.findByText('Website Revamp');
+
+      const dialog = await openArchiveDialog(user);
+      projectsService.listProjects.mockClear();
+      await user.click(within(dialog).getByRole('button', { name: 'Archive' }));
+
       await waitFor(() => {
         expect(projectsService.archiveProject).toHaveBeenCalledWith(project1.id);
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       });
       expect(projectsService.listProjects).toHaveBeenCalled();
     });
 
-    it('cancelled confirm does NOT call archiveProject', async () => {
+    it('cancelling the dialog does NOT call archiveProject', async () => {
       const user = userEvent.setup();
       mockList([project1]);
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
       renderWithAuth(<Projects />, { user: adminUser });
       await screen.findByText('Website Revamp');
 
-      await user.click(screen.getByRole('button', { name: 'Archive' }));
+      const dialog = await openArchiveDialog(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
       expect(projectsService.archiveProject).not.toHaveBeenCalled();
+    });
+
+    it('surfaces a failed archive inside the dialog and keeps it open', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      projectsService.archiveProject.mockRejectedValue(new Error('Archive failed'));
+      renderWithAuth(<Projects />, { user: adminUser });
+      await screen.findByText('Website Revamp');
+
+      const dialog = await openArchiveDialog(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Archive' }));
+
+      expect(await within(dialog).findByText('Archive failed')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 });

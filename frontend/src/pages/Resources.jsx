@@ -1,36 +1,48 @@
+/**
+ * UI-05 Resources.
+ *
+ * The roster of people who can be allocated to projects.
+ * req/UI_UX_Design&UserFlow.md §12 gets sorting, pagination and CSV export from
+ * components/DataTable; §15 gets the shared loading/empty/error states.
+ */
 import { useEffect, useState } from 'react';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
-import Alert from '@mui/material/Alert';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import LinearProgress from '@mui/material/LinearProgress';
-import Stack from '@mui/material/Stack';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
+import DataTable from '../components/DataTable';
+import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as resourcesService from '../services/resourcesService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
 
 const emptyForm = { user_id: '', title: '', department: '', weekly_capacity: 100 };
 
+/** Blank controls mean "no filter", so they are dropped before the request. */
+function activeFilters(filters) {
+  return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== '' && value != null));
+}
+
+function allocationOf(r) {
+  return Number(r.total_allocation_pct) || 0;
+}
+
+function capacityOf(r) {
+  return Number(r.weekly_capacity) || 0;
+}
+
 export default function Resources() {
   const { user } = useAuth();
-  const [resources, setResources] = useState([]);
   const [users, setUsers] = useState([]);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({ q: '', department: '' });
 
   const [formOpen, setFormOpen] = useState(false);
@@ -38,19 +50,57 @@ export default function Resources() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
 
+  // Bumping the token re-runs the fetch effect after a create/edit.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  // The result carries the request it answers, so "loading" is derived rather
+  // than toggled — no state has to be written before the request is issued.
+  const [result, setResult] = useState({ key: null, resources: [], error: '' });
+  const requestKey = JSON.stringify({ ...filters, reloadToken });
+  const loading = result.key !== requestKey;
+  const resources = result.resources;
+  const error = loading ? '' : result.error;
+
+  // A PM staffs their own projects, so they can add and edit resource records
+  // alongside Admin (see backend/resources-service).
   const canManage = user?.role === 'admin' || user?.role === 'project_manager';
+  // GET /users is Admin-only, so only an Admin can offer a name picker; a PM
+  // enters the user id directly.
+  const canPickUser = user?.role === 'admin';
+  const filtered = Object.values(filters).some(Boolean);
+  // Only the very first load gets the skeleton. Swapping the table out on every
+  // refetch would unmount the filter controls the user is still typing into.
+  const showSkeleton = loading && result.key === null;
 
   function load() {
-    resourcesService.listResources(filters).then((data) => setResources(data.resources)).catch((err) => setError(err.message));
+    setReloadToken((token) => token + 1);
   }
 
-  useEffect(load, [filters]);
+  useEffect(() => {
+    let active = true;
+    resourcesService
+      .listResources(activeFilters(filters))
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, resources: data.resources, error: '' });
+      })
+      .catch((err) => {
+        if (active) setResult((prev) => ({ key: requestKey, resources: prev.resources, error: err.message }));
+      });
+    return () => {
+      active = false;
+    };
+  }, [filters, requestKey]);
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (canPickUser) {
       usersService.listUsers().then((data) => setUsers(data.users.filter((u) => u.is_active))).catch(() => {});
     }
-  }, [user]);
+  }, [canPickUser]);
+
+  function updateFilter(key, value) {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  }
 
   function openCreate() {
     setEditingId(null);
@@ -84,78 +134,118 @@ export default function Resources() {
     }
   }
 
+  const columns = [
+    { id: 'user_name', label: 'Name' },
+    { id: 'title', label: 'Title', render: (r) => r.title || '—' },
+    { id: 'department', label: 'Department', render: (r) => r.department || '—' },
+    {
+      id: 'total_allocation_pct',
+      label: 'Utilization',
+      width: 220,
+      sortValue: (r) => allocationOf(r),
+      exportValue: (r) => `${allocationOf(r)}/${capacityOf(r)}%`,
+      render: (r) => {
+        const pct = allocationOf(r);
+        const capacity = capacityOf(r);
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(pct, 100)}
+              color={pct > capacity ? 'error' : 'primary'}
+              sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
+            />
+            <Typography variant="caption">{pct}/{capacity}%</Typography>
+          </Box>
+        );
+      },
+    },
+    {
+      id: 'over_allocated',
+      label: 'Over-allocated',
+      align: 'center',
+      sortValue: (r) => (allocationOf(r) > capacityOf(r) ? 1 : 0),
+      exportValue: (r) => (allocationOf(r) > capacityOf(r) ? 'Yes' : 'No'),
+      render: (r) =>
+        allocationOf(r) > capacityOf(r) ? (
+          <Chip size="small" color="error" label="Over-allocated" />
+        ) : (
+          <Typography variant="body2" color="text.secondary">—</Typography>
+        ),
+    },
+  ];
+
+  if (canManage) {
+    columns.push({
+      id: 'actions',
+      label: 'Actions',
+      align: 'right',
+      sortable: false,
+      exportable: false,
+      render: (r) => (
+        <Button size="small" onClick={() => openEdit(r)}>
+          Edit
+        </Button>
+      ),
+    });
+  }
+
+  const toolbar = (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flexGrow: 1 }}>
+      <TextField
+        label="Search" size="small" sx={{ minWidth: 200, flexGrow: 1 }}
+        placeholder="Search by name or title"
+        value={filters.q}
+        onChange={(e) => updateFilter('q', e.target.value)}
+      />
+      <TextField
+        label="Department" size="small" sx={{ minWidth: 150 }}
+        value={filters.department}
+        onChange={(e) => updateFilter('department', e.target.value)}
+      />
+    </Box>
+  );
+
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h4" component="h1">Resources</Typography>
-        {canManage && <Button variant="contained" onClick={openCreate}>Add Resource</Button>}
-      </Box>
+      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
+        Resources
+      </Typography>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-        <TextField
-          label="Search" size="small" sx={{ minWidth: 220 }}
-          placeholder="Search by name or title"
-          value={filters.q}
-          onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+      {showSkeleton && <LoadingState variant="table" label="Loading resources…" />}
+
+      {!showSkeleton && error && (
+        <ErrorState title="Could not load resources" error={error} onRetry={load} />
+      )}
+
+      {/* With no filters applied there is nothing to filter, so the toolbar can
+          go and the §15 call to action takes the whole screen. */}
+      {!showSkeleton && !error && resources.length === 0 && !filtered && (
+        <EmptyState
+          title="No resources yet"
+          message="Add a resource to make someone available for project allocation."
+          actionLabel={canManage ? 'Add Resource' : undefined}
+          onAction={canManage ? openCreate : undefined}
         />
-        <TextField
-          label="Department" size="small"
-          value={filters.department}
-          onChange={(e) => setFilters({ ...filters, department: e.target.value })}
+      )}
+
+      {!showSkeleton && !error && (resources.length > 0 || filtered) && (
+        <DataTable
+          columns={columns}
+          rows={resources}
+          defaultOrderBy="user_name"
+          exportFilename="resources.csv"
+          emptyMessage="No resources match these filters."
+          toolbar={toolbar}
+          actions={
+            canManage ? (
+              <Button variant="contained" onClick={openCreate}>
+                Add Resource
+              </Button>
+            ) : null
+          }
         />
-      </Stack>
-
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Title</TableCell>
-              <TableCell>Department</TableCell>
-              <TableCell sx={{ width: 220 }}>Utilization</TableCell>
-              {canManage && <TableCell align="right">Actions</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {resources.map((r) => {
-              const pct = Number(r.total_allocation_pct);
-              const capacity = Number(r.weekly_capacity);
-              const overAllocated = pct > capacity;
-              return (
-                <TableRow key={r.id}>
-                  <TableCell>{r.user_name}</TableCell>
-                  <TableCell>{r.title || '—'}</TableCell>
-                  <TableCell>{r.department || '—'}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={Math.min(pct, 100)}
-                        color={overAllocated ? 'error' : 'primary'}
-                        sx={{ flexGrow: 1, height: 8, borderRadius: 4 }}
-                      />
-                      <Typography variant="caption">{pct}/{capacity}%</Typography>
-                      {overAllocated && <Chip size="small" color="error" label="Over-allocated" />}
-                    </Box>
-                  </TableCell>
-                  {canManage && (
-                    <TableCell align="right">
-                      <Button size="small" onClick={() => openEdit(r)}>Edit</Button>
-                    </TableCell>
-                  )}
-                </TableRow>
-              );
-            })}
-            {resources.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={canManage ? 5 : 4} align="center">No resources yet.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      )}
 
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} fullWidth maxWidth="xs">
         <Box component="form" onSubmit={handleSubmit}>
@@ -164,7 +254,7 @@ export default function Resources() {
             {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
 
             {!editingId && (
-              user?.role === 'admin' ? (
+              canPickUser ? (
                 <TextField
                   select label="User" fullWidth required margin="dense"
                   value={form.user_id}

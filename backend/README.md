@@ -79,6 +79,29 @@ backend/
 
 Terraform auto-discovers services by looking for `function.py` (Python), `package.json` (Node.js), or `pom.xml` (Java) one level under `backend/`. Any folder prefixed with `_` is ignored.
 
+## Testing
+
+Each service ships its own pytest suite (`test_*.py`) alongside a `conftest.py`
+providing DB fixtures. Because every service defines modules with the same
+names (`function.py`, `postgres_service.py`, `auth_lib.py`), a single pytest
+process can only import one of each — so the suites run one process per
+service, exactly as they are deployed:
+
+```sh
+./backend/run-tests.sh
+```
+
+To run a single service:
+
+```sh
+./backend/run-tests.sh projects-service
+```
+
+The tests execute against a real local PostgreSQL matching `db/schema.sql`
+(host `localhost`, user/password/database `test`); each test starts from a
+truncated database. Install the test dependencies with
+`pip install -r backend/requirements-dev.txt`.
+
 ## Usage
 
 ### Local Development

@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
 import { AuthProvider, AuthContext } from '../contexts/AuthContext';
+import theme from '../theme';
 
 /**
  * Renders a component wrapped in MemoryRouter + the REAL AuthProvider,
@@ -13,9 +15,11 @@ import { AuthProvider, AuthContext } from '../contexts/AuthContext';
 export function renderWithProviders(ui, { route = '/', initialEntries, ...options } = {}) {
   const entries = initialEntries || [route];
   return render(
-    <MemoryRouter initialEntries={entries}>
-      <AuthProvider>{ui}</AuthProvider>
-    </MemoryRouter>,
+    <ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={entries}>
+        <AuthProvider>{ui}</AuthProvider>
+      </MemoryRouter>
+    </ThemeProvider>,
     options
   );
 }
@@ -34,9 +38,11 @@ export function renderWithAuth(
 ) {
   const entries = initialEntries || [route];
   return render(
-    <MemoryRouter initialEntries={entries}>
-      <AuthContext.Provider value={{ user, loading, login, logout }}>{ui}</AuthContext.Provider>
-    </MemoryRouter>,
+    <ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={entries}>
+        <AuthContext.Provider value={{ user, loading, login, logout }}>{ui}</AuthContext.Provider>
+      </MemoryRouter>
+    </ThemeProvider>,
     options
   );
 }
