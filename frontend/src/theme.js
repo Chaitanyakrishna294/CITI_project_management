@@ -91,8 +91,14 @@ const theme = createTheme({
   },
 
   typography: {
-    // Harbor Blue ships Inter; loaded in index.html with system fallbacks.
+    // Harbor Blue ships Inter. Self-hosted via @fontsource-variable/inter,
+    // imported in main.jsx — no third-party font CDN at runtime.
+    //
+    // 'Inter Variable' is the family name the variable build declares; plain
+    // 'Inter' follows so a locally installed static Inter is still honoured,
+    // then the usual system stack in case the woff2 fails to load.
     fontFamily: [
+      '"Inter Variable"',
       'Inter',
       '"Segoe UI"',
       'Roboto',
