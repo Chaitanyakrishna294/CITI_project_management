@@ -101,5 +101,8 @@ def handler(event=None, context=None):
 
 
 if __name__ == "__main__":
+    # Local smoke check only. The password below is deliberately invalid -- this
+    # asserts that a bad credential is rejected, so it is not a secret.
     print(handler({"requestContext": {"http": {"method": "POST"}}, "rawPath": "/login",
-                    "body": json.dumps({"email": "admin@acme.com", "password": "wrong"})}))
+                    "body": json.dumps({"email": "admin@acme.com",
+                                        "password": "wrong"})}))  # nosec B105 - deliberately invalid credential

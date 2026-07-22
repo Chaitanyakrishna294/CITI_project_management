@@ -138,7 +138,7 @@ def update_resource(config, resource_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE resources SET {set_clause}, updated_at = now() WHERE id = %s",
+                f"UPDATE resources SET {set_clause}, updated_at = now() WHERE id = %s",  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 values,
             )
         return get_resource(config, resource_id)
@@ -247,7 +247,7 @@ def update_allocation(config, allocation_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE resource_allocations SET {set_clause}, updated_at = now() WHERE id = %s",
+                f"UPDATE resource_allocations SET {set_clause}, updated_at = now() WHERE id = %s",  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 values,
             )
         return get_allocation(config, allocation_id)

@@ -128,7 +128,7 @@ def update_deliverable(config, deliverable_id, fields):
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                f"UPDATE deliverables SET {set_clause}, updated_at = now() WHERE id = %s",
+                f"UPDATE deliverables SET {set_clause}, updated_at = now() WHERE id = %s",  # nosec B608 - keys come from a hardcoded allowlist; values use %s
                 values,
             )
         return get_deliverable(config, deliverable_id)
