@@ -3,6 +3,7 @@ Projects service: project CRUD with RBAC.
 
 Routes (relative to this Lambda's Function URL, e.g. /api/projects-service/...):
     GET    /projects       ?status=&manager_id=&department=&date_from=&date_to=
+                           &budget_min=&budget_max=&q=
     POST   /projects        { name, description?, manager_id, department?, start_date?, end_date? }
     GET    /projects/{id}
     PUT    /projects/{id}    { name?, description?, manager_id?, department?, start_date?, end_date?, status? }
@@ -18,6 +19,7 @@ Rules:
 import json
 import logging
 import os
+from decimal import Decimal, InvalidOperation
 
 from auth_lib import authenticate, require_role
 from postgres_service import (
@@ -70,14 +72,33 @@ def _validate_manager(manager_id):
     return None
 
 
+def _decimal_param(qs, key):
+    """Parse an optional numeric query parameter, or None if absent/blank."""
+    raw = qs.get(key)
+    if raw is None or str(raw).strip() == "":
+        return None
+    return Decimal(str(raw))
+
+
 def _list(event):
     qs = event.get("queryStringParameters") or {}
+    try:
+        budget_min = _decimal_param(qs, "budget_min")
+        budget_max = _decimal_param(qs, "budget_max")
+    except (InvalidOperation, ValueError):
+        return _response(400, {"error": "budget_min and budget_max must be numbers"})
+
+    if budget_min is not None and budget_max is not None and budget_min > budget_max:
+        return _response(400, {"error": "budget_min cannot be greater than budget_max"})
+
     filters = {
         "status": qs.get("status"),
         "manager_id": int(qs["manager_id"]) if qs.get("manager_id") else None,
         "department": qs.get("department"),
         "date_from": qs.get("date_from"),
         "date_to": qs.get("date_to"),
+        "budget_min": budget_min,
+        "budget_max": budget_max,
         "q": qs.get("q"),
     }
     return _response(200, {"projects": list_projects(PG_CONFIG, filters)})

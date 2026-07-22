@@ -18,9 +18,17 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function BudgetPanel({ project }) {
   const { user } = useAuth();
-  const [budget, setBudget] = useState(null);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState('');
+  // Bumping the token re-runs the fetch effect after a create/expense.
+  const [reloadToken, setReloadToken] = useState(0);
+
+  // The result carries the request it answers, so the in-flight state is
+  // derived — no state has to be written before the request is issued.
+  const [result, setResult] = useState({ key: null, budget: null, notFound: false, error: '' });
+  const requestKey = `${project.id}|${reloadToken}`;
+  const pending = result.key !== requestKey;
+  const budget = pending ? null : result.budget;
+  const notFound = pending ? false : result.notFound;
+  const error = pending ? '' : result.error;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [plannedAmount, setPlannedAmount] = useState('');
@@ -33,22 +41,30 @@ export default function BudgetPanel({ project }) {
 
   const canManage = user?.role === 'admin' || user?.role === 'finance' || user?.id === project.manager_id;
 
-  function load() {
-    setError('');
-    setNotFound(false);
-    budgetsService
-      .getBudget(project.id)
-      .then((data) => setBudget(data.budget))
-      .catch((err) => {
-        if (err.message.toLowerCase().includes('not found')) {
-          setNotFound(true);
-        } else {
-          setError(err.message);
-        }
-      });
+  function reload() {
+    setReloadToken((token) => token + 1);
   }
 
-  useEffect(load, [project.id]);
+  useEffect(() => {
+    let active = true;
+    budgetsService
+      .getBudget(project.id)
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, budget: data.budget, notFound: false, error: '' });
+      })
+      .catch((err) => {
+        if (!active) return;
+        if (err.message.toLowerCase().includes('not found')) {
+          setResult({ key: requestKey, budget: null, notFound: true, error: '' });
+        } else {
+          setResult({ key: requestKey, budget: null, notFound: false, error: err.message });
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [project.id, requestKey]);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -57,7 +73,7 @@ export default function BudgetPanel({ project }) {
       await budgetsService.createBudget({ project_id: project.id, planned_amount: plannedAmount });
       setCreateOpen(false);
       setPlannedAmount('');
-      load();
+      reload();
     } catch (err) {
       setCreateError(err.message);
     }
@@ -71,7 +87,7 @@ export default function BudgetPanel({ project }) {
       setExpenseOpen(false);
       setExpenseAmount('');
       setExpenseDescription('');
-      load();
+      reload();
     } catch (err) {
       setExpenseError(err.message);
     }

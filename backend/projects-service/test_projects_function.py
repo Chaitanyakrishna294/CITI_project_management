@@ -230,6 +230,146 @@ def test_list_projects_filter_by_q(make_user, auth_headers):
     assert projects[0]["id"] == p1["id"]
 
 
+def test_list_projects_filter_by_date_range(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    early = _create(auth_headers(admin), "Early", manager["id"])
+    late = _create(auth_headers(admin), "Late", manager["id"])
+
+    with db_conn.cursor() as cur:
+        cur.execute(
+            "UPDATE projects SET start_date = '2026-01-01', end_date = '2026-03-31' WHERE id = %s",
+            (early["id"],),
+        )
+        cur.execute(
+            "UPDATE projects SET start_date = '2026-06-01', end_date = '2026-12-31' WHERE id = %s",
+            (late["id"],),
+        )
+
+    event = make_event(
+        "GET",
+        "/projects",
+        query={"date_from": "2026-05-01", "date_to": "2026-12-31"},
+        headers=auth_headers(admin),
+    )
+    projects = _body(handler(event))["projects"]
+    assert [p["id"] for p in projects] == [late["id"]]
+
+
+def _set_budget(db_conn, project_id, planned):
+    with db_conn.cursor() as cur:
+        cur.execute(
+            "INSERT INTO budgets (project_id, planned_amount) VALUES (%s, %s)",
+            (project_id, planned),
+        )
+
+
+def test_list_projects_filter_by_budget_range(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    small = _create(auth_headers(admin), "Small Budget", manager["id"])
+    large = _create(auth_headers(admin), "Large Budget", manager["id"])
+    _set_budget(db_conn, small["id"], 5000)
+    _set_budget(db_conn, large["id"], 250000)
+
+    event = make_event(
+        "GET", "/projects", query={"budget_min": "100000"}, headers=auth_headers(admin)
+    )
+    projects = _body(handler(event))["projects"]
+    assert [p["id"] for p in projects] == [large["id"]]
+
+    event = make_event(
+        "GET", "/projects", query={"budget_max": "100000"}, headers=auth_headers(admin)
+    )
+    projects = _body(handler(event))["projects"]
+    assert [p["id"] for p in projects] == [small["id"]]
+
+    event = make_event(
+        "GET",
+        "/projects",
+        query={"budget_min": "1000", "budget_max": "10000"},
+        headers=auth_headers(admin),
+    )
+    projects = _body(handler(event))["projects"]
+    assert [p["id"] for p in projects] == [small["id"]]
+
+
+def test_list_projects_budget_filter_excludes_unbudgeted_projects(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    budgeted = _create(auth_headers(admin), "Budgeted", manager["id"])
+    _create(auth_headers(admin), "No Budget Yet", manager["id"])
+    _set_budget(db_conn, budgeted["id"], 5000)
+
+    event = make_event(
+        "GET", "/projects", query={"budget_min": "0"}, headers=auth_headers(admin)
+    )
+    projects = _body(handler(event))["projects"]
+    assert [p["id"] for p in projects] == [budgeted["id"]]
+
+
+def test_list_projects_includes_budget_amounts(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    project = _create(auth_headers(admin), "With Budget", manager["id"])
+    _set_budget(db_conn, project["id"], 1234)
+
+    projects = _body(handler(make_event("GET", "/projects", headers=auth_headers(admin))))["projects"]
+    assert projects[0]["planned_amount"] == "1234.00"
+    assert projects[0]["actual_spend"] == "0.00"
+
+
+def test_list_projects_unbudgeted_project_has_null_amounts(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    _create(auth_headers(admin), "No Budget", manager["id"])
+
+    projects = _body(handler(make_event("GET", "/projects", headers=auth_headers(admin))))["projects"]
+    assert projects[0]["planned_amount"] is None
+
+
+def test_list_projects_non_numeric_budget_filter_returns_400(make_user, auth_headers):
+    admin = make_user(role="admin")
+
+    event = make_event(
+        "GET", "/projects", query={"budget_min": "abc"}, headers=auth_headers(admin)
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 400
+    assert "number" in _body(resp)["error"]
+
+
+def test_list_projects_inverted_budget_range_returns_400(make_user, auth_headers):
+    admin = make_user(role="admin")
+
+    event = make_event(
+        "GET",
+        "/projects",
+        query={"budget_min": "500", "budget_max": "100"},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 400
+
+
+def test_list_projects_blank_budget_filter_is_ignored(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    _create(auth_headers(admin), "Unbudgeted", manager["id"])
+
+    # An empty form field must not be treated as "budget >= 0" and filter out
+    # every project that has no budget row yet.
+    event = make_event(
+        "GET",
+        "/projects",
+        query={"budget_min": "", "budget_max": ""},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 200
+    assert len(_body(resp)["projects"]) == 1
+
+
 # ---------------------------------------------------------------------------
 # GET /projects/{id}
 # ---------------------------------------------------------------------------

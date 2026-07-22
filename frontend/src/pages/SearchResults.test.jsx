@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderWithProviders, screen, within } from '../test/test-utils';
+import { renderWithProviders, screen } from '../test/test-utils';
 import SearchResults from './SearchResults';
 import * as projectsService from '../services/projectsService';
 import * as deliverablesService from '../services/deliverablesService';

@@ -15,25 +15,43 @@ import * as projectsService from '../services/projectsService';
 import * as deliverablesService from '../services/deliverablesService';
 import * as resourcesService from '../services/resourcesService';
 
+const EMPTY_RESULTS = { projects: [], deliverables: [], resources: [] };
+
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const q = searchParams.get('q') || '';
-  const [results, setResults] = useState(null);
-  const [error, setError] = useState('');
+
+  // The state carries the query it answers, so an empty query needs no request
+  // and "still loading" is derived rather than written before one is issued.
+  const [state, setState] = useState({ key: null, results: null, error: '' });
+  const answered = state.key === q;
+  const results = q ? (answered ? state.results : null) : EMPTY_RESULTS;
+  const error = answered ? state.error : '';
 
   useEffect(() => {
-    if (!q) {
-      setResults({ projects: [], deliverables: [], resources: [] });
-      return;
-    }
-    setResults(null);
+    if (!q) return;
+    let active = true;
     Promise.all([
       projectsService.listProjects({ q }),
       deliverablesService.listDeliverables({ q }),
       resourcesService.listResources({ q }),
     ])
-      .then(([p, d, r]) => setResults({ projects: p.projects, deliverables: d.deliverables, resources: r.resources }))
-      .catch((err) => setError(err.message));
+      .then(([p, d, r]) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) {
+          setState({
+            key: q,
+            results: { projects: p.projects, deliverables: d.deliverables, resources: r.resources },
+            error: '',
+          });
+        }
+      })
+      .catch((err) => {
+        if (active) setState({ key: q, results: null, error: err.message });
+      });
+    return () => {
+      active = false;
+    };
   }, [q]);
 
   return (

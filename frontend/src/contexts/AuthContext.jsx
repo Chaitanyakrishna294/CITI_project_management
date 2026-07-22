@@ -7,14 +7,13 @@ const TOKEN_KEY = 'acme_token';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Without a token there is nothing to bootstrap, so the initial value already
+  // answers the question and the effect never has to set it synchronously.
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem(TOKEN_KEY)));
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!token) return;
     authService
       .fetchCurrentUser()
       .then((data) => setUser(data.user))

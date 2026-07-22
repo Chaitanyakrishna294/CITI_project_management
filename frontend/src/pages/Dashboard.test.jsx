@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { renderWithAuth, screen, within } from '../test/test-utils';
 import Dashboard from './Dashboard';
 
@@ -27,14 +28,33 @@ describe('Dashboard', () => {
     vi.resetAllMocks();
   });
 
-  it('shows a progress indicator while loading', () => {
+  it('shows skeleton loaders while loading', () => {
     projectsService.listProjects.mockReturnValue(new Promise(() => {}));
     budgetsService.listBudgets.mockReturnValue(new Promise(() => {}));
     resourcesService.listResources.mockReturnValue(new Promise(() => {}));
     deliverablesService.listDeliverables.mockReturnValue(new Promise(() => {}));
 
     renderDashboard();
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    // req/UI_UX §15 specifies skeleton loaders for the loading state.
+    expect(screen.getByRole('status', { name: 'Loading dashboard' })).toBeInTheDocument();
+    expect(screen.queryByText('Welcome back, Jamie Doe (admin)')).not.toBeInTheDocument();
+  });
+
+  it('offers a retry from the error state that re-issues the request', async () => {
+    const interaction = userEvent.setup();
+    projectsService.listProjects.mockRejectedValue(new Error('projects failed to load'));
+    budgetsService.listBudgets.mockResolvedValue({ budgets: [] });
+    resourcesService.listResources.mockResolvedValue({ resources: [] });
+    deliverablesService.listDeliverables.mockResolvedValue({ deliverables: [] });
+
+    renderDashboard();
+    await screen.findByText('projects failed to load');
+
+    projectsService.listProjects.mockResolvedValue({ projects: [] });
+    await interaction.click(screen.getByRole('button', { name: /retry/i }));
+
+    await screen.findByText('Welcome back, Jamie Doe (admin)');
+    expect(projectsService.listProjects).toHaveBeenCalledTimes(2);
   });
 
   it('shows an error alert when projectsService.listProjects rejects', async () => {

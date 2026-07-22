@@ -1,3 +1,12 @@
+/**
+ * Application shell: top bar, global search, and role-aware navigation.
+ *
+ * Navigation mirrors req/UI_UX_Design&UserFlow.md §4 (Dashboard, Projects,
+ * Deliverables, Resources, Budgets, Reports, Administration) and the responsive
+ * behaviour in §13:
+ *   Desktop (md+)  — permanent sidebar alongside a multi-column layout
+ *   Tablet/Mobile  — hamburger button opening a temporary drawer, single column
+ */
 import { useState } from 'react';
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
@@ -6,31 +15,55 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import InputBase from '@mui/material/InputBase';
+import Tooltip from '@mui/material/Tooltip';
+import { alpha, useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import MenuIcon from '@mui/icons-material/Menu';
 import SearchIcon from '@mui/icons-material/Search';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
-import PeopleIcon from '@mui/icons-material/People';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import EngineeringIcon from '@mui/icons-material/Engineering';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import PeopleIcon from '@mui/icons-material/People';
+import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../contexts/AuthContext';
 
-const DRAWER_WIDTH = 220;
+const DRAWER_WIDTH = 232;
 
+/**
+ * `roles: null` means every authenticated role sees the item. Role gating here
+ * is presentational only — ProtectedRoute and the backend enforce real access.
+ */
 const NAV_ITEMS = [
   { label: 'Dashboard', to: '/dashboard', icon: <DashboardIcon />, roles: null },
   { label: 'Projects', to: '/projects', icon: <FolderIcon />, roles: null },
+  { label: 'Deliverables', to: '/deliverables', icon: <AssignmentIcon />, roles: null },
   { label: 'Resources', to: '/resources', icon: <EngineeringIcon />, roles: null },
+  {
+    label: 'Budgets',
+    to: '/budgets',
+    icon: <AccountBalanceIcon />,
+    roles: ['admin', 'project_manager', 'finance'],
+  },
+  { label: 'Reports', to: '/reports', icon: <AssessmentIcon />, roles: null },
   { label: 'Users', to: '/users', icon: <PeopleIcon />, roles: ['admin'] },
 ];
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const [searchTerm, setSearchTerm] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function handleLogout() {
     try {
@@ -43,27 +76,74 @@ export default function AppLayout() {
   function handleSearchSubmit(e) {
     e.preventDefault();
     if (searchTerm.trim()) {
+      setMobileOpen(false);
       navigate(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   }
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role));
 
+  const navigation = (
+    <>
+      <Toolbar />
+      <List component="nav" aria-label="Main navigation" sx={{ px: 1 }}>
+        {visibleItems.map((item) => (
+          <ListItemButton
+            key={item.to}
+            component={NavLink}
+            to={item.to}
+            onClick={() => setMobileOpen(false)}
+            sx={{
+              borderRadius: 1,
+              mb: 0.5,
+              '&.active': {
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                '& .MuiListItemIcon-root': { color: 'inherit' },
+                '&:hover': { bgcolor: 'primary.dark' },
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+            <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'body2' }} />
+          </ListItemButton>
+        ))}
+      </List>
+    </>
+  );
+
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
-      <AppBar position="fixed" color="primary" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ mr: 3, whiteSpace: 'nowrap' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      <AppBar position="fixed" color="primary" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
+        <Toolbar sx={{ gap: 1 }}>
+          {!isDesktop && (
+            <IconButton
+              color="inherit"
+              edge="start"
+              aria-label="Open navigation menu"
+              onClick={() => setMobileOpen(true)}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ mr: 3, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}
+          >
             ACME Project Management
           </Typography>
 
           <Box
             component="form"
+            role="search"
             onSubmit={handleSearchSubmit}
             sx={{
               display: 'flex',
               alignItems: 'center',
-              bgcolor: 'rgba(255,255,255,0.15)',
+              bgcolor: (t) => alpha(t.palette.common.white, 0.15),
+              '&:hover': { bgcolor: (t) => alpha(t.palette.common.white, 0.25) },
               borderRadius: 1,
               px: 1,
               flexGrow: 1,
@@ -73,6 +153,7 @@ export default function AppLayout() {
             <SearchIcon fontSize="small" />
             <InputBase
               placeholder="Search projects, deliverables, resources…"
+              inputProps={{ 'aria-label': 'Search projects, deliverables and resources' }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               sx={{ ml: 1, color: 'inherit', flexGrow: 1, fontSize: 14 }}
@@ -83,42 +164,64 @@ export default function AppLayout() {
 
           {user && (
             <>
-              <Typography variant="body2" sx={{ mr: 2 }}>
+              <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
                 {user.name} · {user.role}
               </Typography>
-              <Button color="inherit" onClick={handleLogout}>
-                Logout
-              </Button>
+              {isDesktop ? (
+                <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
+                  Logout
+                </Button>
+              ) : (
+                <Tooltip title="Logout">
+                  <IconButton color="inherit" aria-label="Logout" onClick={handleLogout}>
+                    <LogoutIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
             </>
           )}
         </Toolbar>
       </AppBar>
 
-      <Drawer
-        variant="permanent"
+      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
+        {isDesktop ? (
+          <Drawer
+            variant="permanent"
+            open
+            sx={{
+              '& .MuiDrawer-paper': {
+                width: DRAWER_WIDTH,
+                boxSizing: 'border-box',
+                borderRight: '1px solid',
+                borderColor: 'divider',
+              },
+            }}
+          >
+            {navigation}
+          </Drawer>
+        ) : (
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            ModalProps={{ keepMounted: true }} // Faster reopen on mobile.
+            sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' } }}
+          >
+            {navigation}
+          </Drawer>
+        )}
+      </Box>
+
+      <Box
+        component="main"
         sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          [`& .MuiDrawer-paper`]: { width: DRAWER_WIDTH, boxSizing: 'border-box' },
+          flexGrow: 1,
+          // minWidth:0 lets wide tables scroll inside the main column instead of
+          // forcing the whole page to scroll sideways on small screens.
+          minWidth: 0,
+          p: { xs: 2, md: 3 },
         }}
       >
-        <Toolbar />
-        <List>
-          {visibleItems.map((item) => (
-            <ListItemButton
-              key={item.to}
-              component={NavLink}
-              to={item.to}
-              sx={{ '&.active': { bgcolor: 'action.selected' } }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
-          ))}
-        </List>
-      </Drawer>
-
-      <Box component="main" sx={{ ml: `${DRAWER_WIDTH}px`, p: 3 }}>
         <Toolbar />
         <Outlet />
       </Box>

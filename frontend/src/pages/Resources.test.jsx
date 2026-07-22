@@ -4,9 +4,17 @@ import { renderWithAuth, screen, waitFor, within } from '../test/test-utils';
 import Resources from './Resources';
 import * as resourcesService from '../services/resourcesService';
 import * as usersService from '../services/usersService';
+import { downloadCsv } from '../utils/csv';
 
 vi.mock('../services/resourcesService');
 vi.mock('../services/usersService');
+
+// Only the download is stubbed — toCsv still runs, so the assertions below
+// exercise the real column contract (exportValue, exportable: false).
+vi.mock('../utils/csv', async (importOriginal) => ({
+  ...(await importOriginal()),
+  downloadCsv: vi.fn(),
+}));
 
 const adminUser = { id: 1, name: 'Ada Admin', role: 'admin' };
 const pmUser = { id: 2, name: 'Pat Manager', role: 'project_manager' };
@@ -37,6 +45,12 @@ function mockList(resources) {
   resourcesService.listResources.mockResolvedValue({ resources });
 }
 
+/** First-cell text of every body row, in the order the table renders them. */
+function bodyRowNames() {
+  const [, ...bodyRows] = screen.getAllByRole('row');
+  return bodyRows.map((row) => within(row).getAllByRole('cell')[0].textContent);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   resourcesService.listResources.mockResolvedValue({ resources: [] });
@@ -44,10 +58,31 @@ beforeEach(() => {
 });
 
 describe('Resources page', () => {
-  it('shows "No resources yet." when the list is empty', async () => {
+  it('shows the empty state when the list is empty', async () => {
     mockList([]);
     renderWithAuth(<Resources />, { user: viewerUser });
-    expect(await screen.findByText('No resources yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No resources yet')).toBeInTheDocument();
+  });
+
+  it('shows a skeleton loading state while the list is being fetched', () => {
+    resourcesService.listResources.mockReturnValue(new Promise(() => {}));
+    renderWithAuth(<Resources />, { user: viewerUser });
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(screen.queryByText('No resources yet')).not.toBeInTheDocument();
+  });
+
+  it('shows a retryable error state when the fetch fails', async () => {
+    const user = userEvent.setup();
+    resourcesService.listResources.mockRejectedValue(new Error('Service unavailable'));
+    renderWithAuth(<Resources />, { user: viewerUser });
+
+    expect(await screen.findByText('Could not load resources')).toBeInTheDocument();
+    expect(screen.getByText('Service unavailable')).toBeInTheDocument();
+
+    mockList([resource1]);
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Pat Manager')).toBeInTheDocument();
   });
 
   describe('Add Resource / Edit visibility by role', () => {
@@ -92,6 +127,20 @@ describe('Resources page', () => {
       expect(screen.queryByRole('button', { name: 'Add Resource' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     });
+
+    it('offers the empty-state call to action only to admin', async () => {
+      mockList([]);
+      renderWithAuth(<Resources />, { user: adminUser });
+      await screen.findByText('No resources yet');
+      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
+    });
+
+    it('omits the empty-state call to action for a viewer', async () => {
+      mockList([]);
+      renderWithAuth(<Resources />, { user: viewerUser });
+      await screen.findByText('No resources yet');
+      expect(screen.queryByRole('button', { name: 'Add Resource' })).not.toBeInTheDocument();
+    });
   });
 
   describe('utilization display', () => {
@@ -118,9 +167,9 @@ describe('Resources page', () => {
 
   it('triggers a new listResources call with updated filters when search/department change', async () => {
     const user = userEvent.setup();
-    mockList([]);
+    mockList([resource1]);
     renderWithAuth(<Resources />, { user: viewerUser });
-    await screen.findByText('No resources yet.');
+    await screen.findByText('Pat Manager');
     resourcesService.listResources.mockClear();
 
     await user.type(screen.getByLabelText('Search'), 'abc');
@@ -139,6 +188,105 @@ describe('Resources page', () => {
     });
   });
 
+  it('omits blank filters from the request', async () => {
+    mockList([resource1]);
+    renderWithAuth(<Resources />, { user: viewerUser });
+    await screen.findByText('Pat Manager');
+
+    expect(resourcesService.listResources).toHaveBeenCalledWith({});
+  });
+
+  it('keeps the filter toolbar reachable when a filter matches nothing', async () => {
+    const user = userEvent.setup();
+    mockList([resource1]);
+    renderWithAuth(<Resources />, { user: viewerUser });
+    await screen.findByText('Pat Manager');
+
+    mockList([]);
+    await user.type(screen.getByLabelText('Search'), 'zzz');
+
+    expect(await screen.findByText('No resources match these filters.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Search')).toHaveValue('zzz');
+  });
+
+  describe('sorting and pagination', () => {
+    it('sorts by name ascending by default and toggles to descending', async () => {
+      const user = userEvent.setup();
+      mockList([resourceOver, resource1]);
+      renderWithAuth(<Resources />, { user: viewerUser });
+      await screen.findByText('Pat Manager');
+
+      expect(bodyRowNames()).toEqual(['Pat Manager', 'Vera Viewer']);
+
+      await user.click(screen.getByRole('button', { name: /^name$/i }));
+      expect(bodyRowNames()).toEqual(['Vera Viewer', 'Pat Manager']);
+    });
+
+    it('sorts the Utilization column numerically, not lexicographically', async () => {
+      const user = userEvent.setup();
+      mockList([
+        { ...resource1, id: 1, user_name: 'Alpha', total_allocation_pct: 100 },
+        { ...resource1, id: 2, user_name: 'Beta', total_allocation_pct: 25 },
+        { ...resource1, id: 3, user_name: 'Gamma', total_allocation_pct: 9 },
+      ]);
+      renderWithAuth(<Resources />, { user: viewerUser });
+      await screen.findByText('Alpha');
+
+      await user.click(screen.getByRole('button', { name: /utilization/i }));
+
+      // Lexicographic order would put '100' before '25'.
+      expect(bodyRowNames()).toEqual(['Gamma', 'Beta', 'Alpha']);
+    });
+
+    it('paginates at ten rows and shows the rest on the next page', async () => {
+      const user = userEvent.setup();
+      const many = Array.from({ length: 12 }, (_, i) => ({
+        ...resource1,
+        id: 200 + i,
+        user_name: `Person ${String(i + 1).padStart(2, '0')}`,
+      }));
+      mockList(many);
+      renderWithAuth(<Resources />, { user: viewerUser });
+      await screen.findByText('Person 01');
+
+      expect(bodyRowNames()).toHaveLength(10);
+      expect(screen.queryByText('Person 11')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Go to next page' }));
+
+      expect(bodyRowNames()).toEqual(['Person 11', 'Person 12']);
+    });
+  });
+
+  describe('CSV export', () => {
+    it('exports the rows to resources.csv with plain-text flag values', async () => {
+      const user = userEvent.setup();
+      mockList([resource1, resourceOver]);
+      renderWithAuth(<Resources />, { user: viewerUser });
+      await screen.findByText('Pat Manager');
+
+      await user.click(screen.getByRole('button', { name: /export/i }));
+
+      expect(downloadCsv).toHaveBeenCalledTimes(1);
+      const [filename, csv] = downloadCsv.mock.calls[0];
+      expect(filename).toBe('resources.csv');
+      expect(csv.split('\n')[0]).toBe('Name,Title,Department,Utilization,Over-allocated');
+      expect(csv).toContain('Pat Manager,Engineer,IT,50/100%,No');
+      expect(csv).toContain('Vera Viewer,Analyst,Finance,120/100%,Yes');
+    });
+
+    it('omits the actions column from the export', async () => {
+      const user = userEvent.setup();
+      mockList([resource1]);
+      renderWithAuth(<Resources />, { user: adminUser });
+      await screen.findByText('Pat Manager');
+
+      await user.click(screen.getByRole('button', { name: /export/i }));
+
+      expect(downloadCsv.mock.calls[0][1].split('\n')[0]).not.toContain('Actions');
+    });
+  });
+
   describe('create dialog user-picker', () => {
     it('shows a User select populated from usersService.listUsers for admin', async () => {
       const user = userEvent.setup();
@@ -150,7 +298,7 @@ describe('Resources page', () => {
         ],
       });
       renderWithAuth(<Resources />, { user: adminUser });
-      await screen.findByText('No resources yet.');
+      await screen.findByText('No resources yet');
 
       await user.click(screen.getByRole('button', { name: 'Add Resource' }));
       expect(await screen.findByRole('heading', { name: 'Add Resource' })).toBeInTheDocument();
@@ -164,7 +312,7 @@ describe('Resources page', () => {
     it('does not fetch the user list for a non-admin', async () => {
       mockList([]);
       renderWithAuth(<Resources />, { user: pmUser });
-      await screen.findByText('No resources yet.');
+      await screen.findByText('No resources yet');
 
       // GET /users is Admin-only, and a PM has no create dialog to populate.
       expect(usersService.listUsers).not.toHaveBeenCalled();
@@ -193,7 +341,7 @@ describe('Resources page', () => {
       });
       resourcesService.createResource.mockResolvedValue({ resource: { id: 200 } });
       renderWithAuth(<Resources />, { user: adminUser });
-      await screen.findByText('No resources yet.');
+      await screen.findByText('No resources yet');
 
       await user.click(screen.getByRole('button', { name: 'Add Resource' }));
       await screen.findByRole('heading', { name: 'Add Resource' });

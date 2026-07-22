@@ -256,3 +256,15 @@ tfplan
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
+
+# Vendored Lambda dependencies (installed by bin/deploy-backend.sh into each
+# service folder with `pip install -t .`) — build output, never source.
+backend/*/psycopg/
+backend/*/psycopg_binary/
+backend/*/psycopg_binary.libs/
+backend/*/bcrypt/
+backend/*/jwt/
+backend/*/*.dist-info/
+
+# Local python virtualenv used to run the backend test suites
+.venv/
