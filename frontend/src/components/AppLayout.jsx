@@ -96,11 +96,16 @@ export default function AppLayout() {
             sx={{
               borderRadius: 1,
               mb: 0.5,
+              color: 'text.primary',
+              '& .MuiListItemIcon-root': { color: 'text.secondary' },
+              // Harbor Blue active state: a soft navy tint (secondary #dce6f9)
+              // with navy text, rather than a solid filled pill.
               '&.active': {
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
+                bgcolor: '#dce6f9',
+                color: 'primary.main',
                 '& .MuiListItemIcon-root': { color: 'inherit' },
-                '&:hover': { bgcolor: 'primary.dark' },
+                '& .MuiListItemText-primary': { fontWeight: 600 },
+                '&:hover': { bgcolor: '#cfdcf5' },
               },
             }}
           >
@@ -114,7 +119,19 @@ export default function AppLayout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <AppBar position="fixed" color="primary" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
+      {/* Harbor Blue chrome: white bar with a hairline border instead of a
+          filled primary bar — the navy is reserved for the brand and actions. */}
+      <AppBar
+        position="fixed"
+        color="inherit"
+        elevation={0}
+        sx={{
+          zIndex: (t) => t.zIndex.drawer + 1,
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
         <Toolbar sx={{ gap: 1 }}>
           {!isDesktop && (
             <IconButton
@@ -130,7 +147,13 @@ export default function AppLayout() {
           <Typography
             variant="h6"
             component="div"
-            sx={{ mr: 3, whiteSpace: 'nowrap', display: { xs: 'none', sm: 'block' } }}
+            sx={{
+              mr: 3,
+              whiteSpace: 'nowrap',
+              display: { xs: 'none', sm: 'block' },
+              color: 'primary.main',
+              fontWeight: 700,
+            }}
           >
             ACME Project Management
           </Typography>
@@ -142,15 +165,17 @@ export default function AppLayout() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              bgcolor: (t) => alpha(t.palette.common.white, 0.15),
-              '&:hover': { bgcolor: (t) => alpha(t.palette.common.white, 0.25) },
+              bgcolor: 'background.default',
+              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
+              border: '1px solid',
+              borderColor: 'divider',
               borderRadius: 1,
               px: 1,
               flexGrow: 1,
               maxWidth: 360,
             }}
           >
-            <SearchIcon fontSize="small" />
+            <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
             <InputBase
               placeholder="Search projects, deliverables, resources…"
               inputProps={{ 'aria-label': 'Search projects, deliverables and resources' }}
@@ -192,6 +217,7 @@ export default function AppLayout() {
               '& .MuiDrawer-paper': {
                 width: DRAWER_WIDTH,
                 boxSizing: 'border-box',
+                bgcolor: '#f8fafc', // Harbor sidebar tone
                 borderRight: '1px solid',
                 borderColor: 'divider',
               },
@@ -205,7 +231,7 @@ export default function AppLayout() {
             open={mobileOpen}
             onClose={() => setMobileOpen(false)}
             ModalProps={{ keepMounted: true }} // Faster reopen on mobile.
-            sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' } }}
+            sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', bgcolor: '#f8fafc' } }}
           >
             {navigation}
           </Drawer>

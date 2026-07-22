@@ -45,11 +45,11 @@ export default function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: 'grey.100',
+        bgcolor: 'background.default',
       }}
     >
-      <Paper elevation={3} sx={{ p: 4, width: 360 }}>
-        <Typography variant="h5" component="h1" gutterBottom>
+      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'primary.main', fontWeight: 700 }}>
           ACME Project Management
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>

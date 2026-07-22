@@ -268,3 +268,8 @@ backend/*/*.dist-info/
 
 # Local python virtualenv used to run the backend test suites
 .venv/
+
+# Per-directory Claude Code scratch config (e.g. browser-preview launch.json).
+# The shared project config under the repo-root .claude/ stays tracked.
+frontend/.claude/
+backend/.claude/
