@@ -57,3 +57,10 @@ variable "aws_eks_enabled" {
   type        = bool
   default     = false
 }
+
+variable "jwt_secret" {
+  description = "Secret key used to sign JWT authentication tokens. Override in a shared/production environment."
+  type        = string
+  default     = "dev-secret-change-me"
+  sensitive   = true
+}
