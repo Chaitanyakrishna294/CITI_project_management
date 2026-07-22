@@ -20,8 +20,12 @@ jobs:
         with:
           node-version: '24'
 
+      # `npm ci` installs exactly what package-lock.json pins and fails if the
+      # lockfile and package.json disagree. `npm install` would silently
+      # re-resolve the caret ranges, so the audit below would be scanning a
+      # different dependency tree than the one that actually ships.
       - name: Install npm dependencies
-        run: npm install --prefix ./frontend
+        run: npm ci --prefix ./frontend
 
       # Gating scan: production dependencies only -- these are what actually
       # ship to the browser via the Vite bundle.

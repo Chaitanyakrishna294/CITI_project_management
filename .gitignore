@@ -201,9 +201,16 @@ app/db
 # Node.js
 node_modules/
 npm-debug.log*
-package-lock.json*
 yarn-debug.log*
 yarn-error.log*
+
+# Lockfiles ARE committed. Without one, every `npm install` resolves whatever
+# satisfies the caret ranges at that moment: builds are not reproducible, and a
+# malicious minor release of any transitive dependency lands silently. The
+# example scaffold under backend/_examples/ is never deployed, so its lockfile
+# stays untracked.
+backend/_examples/**/package-lock.json
+backend/_examples/**/yarn.lock
 
 # Optional eslint cache
 .eslintcache
