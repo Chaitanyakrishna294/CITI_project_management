@@ -1,0 +1,140 @@
+"""
+PostgreSQL access for the projects service.
+"""
+
+from psycopg import connect
+from psycopg.rows import dict_row
+
+PG_CONN = None
+
+VALID_STATUSES = {"active", "completed", "delayed", "archived"}
+
+
+def get_connection(config):
+    global PG_CONN
+    if PG_CONN is None or PG_CONN.closed:
+        PG_CONN = connect(config, row_factory=dict_row, autocommit=True)
+    return PG_CONN
+
+
+def list_projects(config, filters):
+    """filters: dict subset of {status, manager_id, department, date_from, date_to, q}"""
+    global PG_CONN
+    where = []
+    params = []
+
+    if filters.get("status"):
+        where.append("p.status = %s")
+        params.append(filters["status"])
+    if filters.get("manager_id"):
+        where.append("p.manager_id = %s")
+        params.append(filters["manager_id"])
+    if filters.get("department"):
+        where.append("p.department = %s")
+        params.append(filters["department"])
+    if filters.get("date_from"):
+        where.append("p.start_date >= %s")
+        params.append(filters["date_from"])
+    if filters.get("date_to"):
+        where.append("p.end_date <= %s")
+        params.append(filters["date_to"])
+    if filters.get("q"):
+        where.append("(p.name ILIKE %s OR p.description ILIKE %s)")
+        like = f"%{filters['q']}%"
+        params.extend([like, like])
+
+    query = (
+        "SELECT p.id, p.name, p.description, p.status, p.manager_id, "
+        "u.name AS manager_name, p.department, p.start_date, p.end_date, "
+        "p.created_at, p.updated_at "
+        "FROM projects p JOIN users u ON u.id = p.manager_id"
+    )
+    if where:
+        query += " WHERE " + " AND ".join(where)
+    query += " ORDER BY p.created_at DESC"
+
+    try:
+        conn = get_connection(config)
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            return cur.fetchall()
+    except Exception:
+        PG_CONN = None
+        raise
+
+
+def get_project(config, project_id):
+    global PG_CONN
+    try:
+        conn = get_connection(config)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT p.id, p.name, p.description, p.status, p.manager_id, "
+                "u.name AS manager_name, p.department, p.start_date, p.end_date, "
+                "p.created_at, p.updated_at "
+                "FROM projects p JOIN users u ON u.id = p.manager_id "
+                "WHERE p.id = %s",
+                (project_id,),
+            )
+            return cur.fetchone()
+    except Exception:
+        PG_CONN = None
+        raise
+
+
+def get_active_manager(config, user_id):
+    """A valid project manager is an active admin or project_manager user."""
+    global PG_CONN
+    try:
+        conn = get_connection(config)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, role, is_active FROM users WHERE id = %s",
+                (user_id,),
+            )
+            return cur.fetchone()
+    except Exception:
+        PG_CONN = None
+        raise
+
+
+def create_project(config, name, description, manager_id, department, start_date, end_date):
+    global PG_CONN
+    try:
+        conn = get_connection(config)
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO projects (name, description, manager_id, department, start_date, end_date) "
+                "VALUES (%s, %s, %s, %s, %s, %s) "
+                "RETURNING id, name, description, status, manager_id, department, start_date, end_date, created_at, updated_at",
+                (name, description, manager_id, department, start_date, end_date),
+            )
+            return cur.fetchone()
+    except Exception:
+        PG_CONN = None
+        raise
+
+
+def update_project(config, project_id, fields):
+    """fields: dict subset of {name, description, manager_id, department, start_date, end_date, status}"""
+    global PG_CONN
+    if not fields:
+        return get_project(config, project_id)
+    set_clause = ", ".join(f"{key} = %s" for key in fields)
+    values = list(fields.values()) + [project_id]
+    try:
+        conn = get_connection(config)
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE projects SET {set_clause}, updated_at = now() WHERE id = %s RETURNING id",
+                values,
+            )
+            updated = cur.fetchone()
+            return get_project(config, updated["id"]) if updated else None
+    except Exception:
+        PG_CONN = None
+        raise
+
+
+def archive_project(config, project_id):
+    return update_project(config, project_id, {"status": "archived"})
