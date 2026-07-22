@@ -36,6 +36,12 @@ def _make_allocation(db_conn, resource_id, project_id, allocation_pct):
         return cur.fetchone()
 
 
+def get_allocation_row(db_conn, allocation_id):
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT * FROM resource_allocations WHERE id = %s", (allocation_id,))
+        return cur.fetchone()
+
+
 def body_of(resp):
     return json.loads(resp["body"])
 
@@ -66,7 +72,8 @@ def test_admin_can_create_resource(make_user, auth_headers, db_conn):
     assert resource["title"] == "Dev"
 
 
-def test_pm_can_create_resource(make_user, auth_headers):
+def test_pm_forbidden_to_create_resource(make_user, auth_headers):
+    """Resource records are org-wide master data, so they are Admin-only (PRD §9)."""
     pm = make_user(role="project_manager")
     target = make_user(role="team_member")
     event = make_event(
@@ -76,7 +83,7 @@ def test_pm_can_create_resource(make_user, auth_headers):
         headers=auth_headers(pm),
     )
     resp = handler(event)
-    assert resp["statusCode"] == 201
+    assert resp["statusCode"] == 403
 
 
 def test_non_manager_forbidden_to_create_resource(make_user, auth_headers):
@@ -212,6 +219,27 @@ def test_update_resource_forbidden_for_non_manager(make_user, auth_headers, db_c
     )
     resp = handler(event)
     assert resp["statusCode"] == 403
+
+
+def test_pm_forbidden_to_raise_weekly_capacity(make_user, auth_headers, db_conn):
+    """weekly_capacity is the ceiling the over-allocation guard enforces, so a PM
+    must not be able to inflate it on a resource shared with other managers."""
+    pm = make_user(role="project_manager")
+    user1 = make_user(role="team_member")
+    resource = _make_resource(db_conn, user1["id"], weekly_capacity=100)
+
+    event = make_event(
+        "PUT",
+        f"/resources/{resource['id']}",
+        body={"weekly_capacity": 500},
+        headers=auth_headers(pm),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 403
+
+    with db_conn.cursor() as cur:
+        cur.execute("SELECT weekly_capacity FROM resources WHERE id = %s", (resource["id"],))
+        assert float(cur.fetchone()["weekly_capacity"]) == 100.0
 
 
 def test_update_resource_not_found(make_user, auth_headers):
@@ -375,6 +403,53 @@ def test_create_allocation_nonexistent_resource(make_user, auth_headers, db_conn
     assert resp["statusCode"] == 404
 
 
+def test_create_allocation_by_projects_own_manager(make_user, auth_headers, db_conn):
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+
+    resp = handler(make_event(
+        "POST",
+        "/allocations",
+        body={"resource_id": resource["id"], "project_id": project["id"], "allocation_pct": 30},
+        headers=auth_headers(pm),
+    ))
+    assert resp["statusCode"] == 201
+
+
+def test_create_allocation_forbidden_for_other_projects_manager(make_user, auth_headers, db_conn):
+    owner_pm = make_user(role="project_manager")
+    other_pm = make_user(role="project_manager")
+    project = _make_project(db_conn, owner_pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+
+    resp = handler(make_event(
+        "POST",
+        "/allocations",
+        body={"resource_id": resource["id"], "project_id": project["id"], "allocation_pct": 30},
+        headers=auth_headers(other_pm),
+    ))
+    assert resp["statusCode"] == 403
+
+
+def test_create_allocation_admin_not_restricted_to_own_projects(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+
+    resp = handler(make_event(
+        "POST",
+        "/allocations",
+        body={"resource_id": resource["id"], "project_id": project["id"], "allocation_pct": 30},
+        headers=auth_headers(admin),
+    ))
+    assert resp["statusCode"] == 201
+
+
 # ---- PUT /allocations/{id} -------------------------------------------------
 
 def test_update_allocation_forbidden_for_non_manager(make_user, auth_headers, db_conn):
@@ -444,6 +519,57 @@ def test_update_allocation_exceeds_capacity_with_other_allocations(make_user, au
     assert resp["statusCode"] == 400
 
 
+def test_update_allocation_by_projects_own_manager(make_user, auth_headers, db_conn):
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "PUT",
+        f"/allocations/{allocation['id']}",
+        body={"allocation_pct": 40},
+        headers=auth_headers(pm),
+    ))
+    assert resp["statusCode"] == 200
+    assert float(body_of(resp)["allocation"]["allocation_pct"]) == 40.0
+
+
+def test_update_allocation_forbidden_for_other_projects_manager(make_user, auth_headers, db_conn):
+    owner_pm = make_user(role="project_manager")
+    other_pm = make_user(role="project_manager")
+    project = _make_project(db_conn, owner_pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "PUT",
+        f"/allocations/{allocation['id']}",
+        body={"allocation_pct": 40},
+        headers=auth_headers(other_pm),
+    ))
+    assert resp["statusCode"] == 403
+
+
+def test_update_allocation_admin_not_restricted_to_own_projects(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"], weekly_capacity=100)
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "PUT",
+        f"/allocations/{allocation['id']}",
+        body={"allocation_pct": 40},
+        headers=auth_headers(admin),
+    ))
+    assert resp["statusCode"] == 200
+
+
 # ---- DELETE /allocations/{id} ----------------------------------------------
 
 def test_delete_allocation_forbidden_for_non_manager(make_user, auth_headers, db_conn):
@@ -486,6 +612,49 @@ def test_delete_allocation_success_and_removed_from_list(make_user, auth_headers
     ))
     assert list_resp["statusCode"] == 200
     assert body_of(list_resp)["allocations"] == []
+
+
+def test_delete_allocation_by_projects_own_manager(make_user, auth_headers, db_conn):
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"])
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "DELETE", f"/allocations/{allocation['id']}", headers=auth_headers(pm)
+    ))
+    assert resp["statusCode"] == 200
+
+
+def test_delete_allocation_forbidden_for_other_projects_manager(make_user, auth_headers, db_conn):
+    owner_pm = make_user(role="project_manager")
+    other_pm = make_user(role="project_manager")
+    project = _make_project(db_conn, owner_pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"])
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "DELETE", f"/allocations/{allocation['id']}", headers=auth_headers(other_pm)
+    ))
+    assert resp["statusCode"] == 403
+    # and the allocation is still there
+    assert get_allocation_row(db_conn, allocation["id"]) is not None
+
+
+def test_delete_allocation_admin_not_restricted_to_own_projects(make_user, auth_headers, db_conn):
+    admin = make_user(role="admin")
+    pm = make_user(role="project_manager")
+    project = _make_project(db_conn, pm["id"])
+    resource_user = make_user(role="team_member")
+    resource = _make_resource(db_conn, resource_user["id"])
+    allocation = _make_allocation(db_conn, resource["id"], project["id"], 30)
+
+    resp = handler(make_event(
+        "DELETE", f"/allocations/{allocation['id']}", headers=auth_headers(admin)
+    ))
+    assert resp["statusCode"] == 200
 
 
 # ---- GET /allocations -------------------------------------------------------

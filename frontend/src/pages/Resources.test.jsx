@@ -59,12 +59,14 @@ describe('Resources page', () => {
       expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
     });
 
-    it('shows "Add Resource" and per-row "Edit" for project_manager', async () => {
+    // Resource records are org-wide master data and Admin-only on the backend;
+    // a project_manager manages allocations, not the resource rows themselves.
+    it('hides "Add Resource" and "Edit" for project_manager', async () => {
       mockList([resource1]);
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('Pat Manager');
-      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add Resource' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     });
 
     it('hides "Add Resource" and "Edit" for viewer', async () => {
@@ -159,18 +161,13 @@ describe('Resources page', () => {
       expect(screen.queryByRole('option', { name: /Inactive Ivy/ })).not.toBeInTheDocument();
     });
 
-    it('shows a free-text numeric "User ID" field for project_manager', async () => {
-      const user = userEvent.setup();
+    it('does not fetch the user list for a non-admin', async () => {
       mockList([]);
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('No resources yet.');
 
-      await user.click(screen.getByRole('button', { name: 'Add Resource' }));
-      expect(await screen.findByRole('heading', { name: 'Add Resource' })).toBeInTheDocument();
-
-      const userIdField = screen.getByLabelText('User ID *');
-      expect(userIdField).toHaveAttribute('type', 'number');
-      expect(screen.queryByLabelText('User *')).not.toBeInTheDocument();
+      // GET /users is Admin-only, and a PM has no create dialog to populate.
+      expect(usersService.listUsers).not.toHaveBeenCalled();
     });
 
     it('hides any user-picker (select or text field) when editing an existing row', async () => {
@@ -191,15 +188,19 @@ describe('Resources page', () => {
     it('submitting create calls createResource with the full form including user_id', async () => {
       const user = userEvent.setup();
       mockList([]);
+      usersService.listUsers.mockResolvedValue({
+        users: [{ id: 42, name: 'Casey Consultant', role: 'team_member', is_active: true }],
+      });
       resourcesService.createResource.mockResolvedValue({ resource: { id: 200 } });
-      renderWithAuth(<Resources />, { user: pmUser });
+      renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('No resources yet.');
 
       await user.click(screen.getByRole('button', { name: 'Add Resource' }));
       await screen.findByRole('heading', { name: 'Add Resource' });
 
       const dialog = screen.getByRole('dialog');
-      await user.type(within(dialog).getByLabelText('User ID *'), '42');
+      await user.click(within(dialog).getByLabelText('User *'));
+      await user.click(await screen.findByRole('option', { name: /Casey Consultant/ }));
       await user.type(within(dialog).getByLabelText('Title'), 'Consultant');
       await user.type(within(dialog).getByLabelText('Department'), 'Ops');
 
@@ -209,7 +210,7 @@ describe('Resources page', () => {
       await waitFor(() => {
         expect(resourcesService.createResource).toHaveBeenCalledWith(
           expect.objectContaining({
-            user_id: '42',
+            user_id: 42,
             title: 'Consultant',
             department: 'Ops',
           })

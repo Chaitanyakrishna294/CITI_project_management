@@ -13,7 +13,12 @@ Routes (relative to this Lambda's Function URL, e.g. /api/resources-service/...)
     DELETE /allocations/{id}
 
 Rules:
-    - Managing resources/allocations: Admin or Project Manager. Everyone else is read-only.
+    - Managing resource records: Admin only. A resource is org-wide master data with no
+      project of its own, and weekly_capacity is the ceiling the over-allocation guard
+      enforces, so a Project Manager must not be able to raise it.
+    - Managing allocations: Admin, or the manager of the project being allocated to
+      (PRD §9 scopes a Project Manager to their assigned projects).
+    - Reading resources/allocations: any authenticated role.
     - A resource cannot be allocated beyond its weekly_capacity across all projects (over-allocation guard).
     - A resource cannot be assigned to the same project twice (enforced by a DB unique constraint).
 """
@@ -29,6 +34,7 @@ from postgres_service import (
     delete_allocation,
     get_active_user,
     get_allocation,
+    get_project,
     get_resource,
     get_resource_allocation_total,
     get_resource_by_user,
@@ -75,6 +81,12 @@ def _parse_path(path):
     return parts[0], resource_id
 
 
+def _can_manage_project(claims, project):
+    if claims.get("role") == "admin":
+        return True
+    return claims.get("role") == "project_manager" and int(claims["sub"]) == project["manager_id"]
+
+
 # ---- Resources ---------------------------------------------------------
 
 def _list_resources(event):
@@ -84,8 +96,8 @@ def _list_resources(event):
 
 
 def _create_resource(event, claims):
-    if not require_role(claims, MANAGER_ROLES):
-        return _response(403, {"error": "Admin or Project Manager role required"})
+    if not require_role(claims, {"admin"}):
+        return _response(403, {"error": "Admin role required"})
 
     try:
         body = json.loads(event.get("body") or "{}")
@@ -115,8 +127,8 @@ def _get_resource(resource_id):
 
 
 def _update_resource(event, claims, resource_id):
-    if not require_role(claims, MANAGER_ROLES):
-        return _response(403, {"error": "Admin or Project Manager role required"})
+    if not require_role(claims, {"admin"}):
+        return _response(403, {"error": "Admin role required"})
     if not get_resource(PG_CONFIG, resource_id):
         return _response(404, {"error": "Resource not found"})
 
@@ -156,6 +168,12 @@ def _create_allocation(event, claims):
     if not resource_id or not project_id or not allocation_pct:
         return _response(400, {"error": "resource_id, project_id and allocation_pct are required"})
 
+    project = get_project(PG_CONFIG, project_id)
+    if not project:
+        return _response(404, {"error": "project_id does not reference an existing project"})
+    if not _can_manage_project(claims, project):
+        return _response(403, {"error": "Only the project's manager or an Admin can allocate resources to it"})
+
     resource = get_resource(PG_CONFIG, resource_id)
     if not resource:
         return _response(404, {"error": "Resource not found"})
@@ -188,6 +206,9 @@ def _update_allocation(event, claims, allocation_id):
     allocation = get_allocation(PG_CONFIG, allocation_id)
     if not allocation:
         return _response(404, {"error": "Allocation not found"})
+    project = get_project(PG_CONFIG, allocation["project_id"])
+    if not _can_manage_project(claims, project):
+        return _response(403, {"error": "Only the project's manager or an Admin can change this allocation"})
 
     try:
         body = json.loads(event.get("body") or "{}")
@@ -216,6 +237,14 @@ def _update_allocation(event, claims, allocation_id):
 def _delete_allocation(claims, allocation_id):
     if not require_role(claims, MANAGER_ROLES):
         return _response(403, {"error": "Admin or Project Manager role required"})
+
+    allocation = get_allocation(PG_CONFIG, allocation_id)
+    if not allocation:
+        return _response(404, {"error": "Allocation not found"})
+    project = get_project(PG_CONFIG, allocation["project_id"])
+    if not _can_manage_project(claims, project):
+        return _response(403, {"error": "Only the project's manager or an Admin can remove this allocation"})
+
     if not delete_allocation(PG_CONFIG, allocation_id):
         return _response(404, {"error": "Allocation not found"})
     return _response(200, {"message": "Allocation removed"})

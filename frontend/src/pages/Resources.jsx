@@ -38,7 +38,9 @@ export default function Resources() {
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
 
-  const canManage = user?.role === 'admin' || user?.role === 'project_manager';
+  // Resource records are org-wide master data, so creating/editing them is Admin-only
+  // (see backend/resources-service). Project Managers manage allocations, not resources.
+  const canManage = user?.role === 'admin';
 
   function load() {
     resourcesService.listResources(filters).then((data) => setResources(data.resources)).catch((err) => setError(err.message));
@@ -47,10 +49,10 @@ export default function Resources() {
   useEffect(load, [filters]);
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (canManage) {
       usersService.listUsers().then((data) => setUsers(data.users.filter((u) => u.is_active))).catch(() => {});
     }
-  }, [user]);
+  }, [canManage]);
 
   function openCreate() {
     setEditingId(null);
@@ -164,22 +166,13 @@ export default function Resources() {
             {formError && <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>}
 
             {!editingId && (
-              user?.role === 'admin' ? (
-                <TextField
-                  select label="User" fullWidth required margin="dense"
-                  value={form.user_id}
-                  onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-                >
-                  {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name} ({u.role})</MenuItem>)}
-                </TextField>
-              ) : (
-                <TextField
-                  label="User ID" type="number" fullWidth required margin="dense"
-                  helperText="Enter the numeric user ID for this team member"
-                  value={form.user_id}
-                  onChange={(e) => setForm({ ...form, user_id: e.target.value })}
-                />
-              )
+              <TextField
+                select label="User" fullWidth required margin="dense"
+                value={form.user_id}
+                onChange={(e) => setForm({ ...form, user_id: e.target.value })}
+              >
+                {users.map((u) => <MenuItem key={u.id} value={u.id}>{u.name} ({u.role})</MenuItem>)}
+              </TextField>
             )}
 
             <TextField
