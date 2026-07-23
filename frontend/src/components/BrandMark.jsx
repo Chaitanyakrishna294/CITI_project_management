@@ -24,11 +24,16 @@ export default function BrandMark({
   // Emboss mode: a hairline divider-toned edge around the glyph so a
   // paper-white mark stays perceptible against the near-white canvas.
   outlined = false,
+  // Which surface the mark sits on. The X only shows when its ground is
+  // ink (index.css hides each class in the mode where that ground turns
+  // porcelain): 'ink' = sidebar surfaces, 'paper' = canvas/card surfaces.
+  ground = 'ink',
   glyphSx = { right: -size * 0.2, bottom: -size * 0.3 },
 }) {
   return (
     <Box
       aria-hidden
+      className={`brand-mark-${ground}`}
       sx={{
         position: fixed ? 'fixed' : 'absolute',
         inset: 0,

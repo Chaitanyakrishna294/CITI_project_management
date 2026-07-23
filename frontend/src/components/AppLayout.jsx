@@ -249,6 +249,7 @@ export default function AppLayout() {
       <BrandMark
         fixed
         outlined
+        ground="paper"
         size={560}
         opacity={0.9}
         color="background.paper"

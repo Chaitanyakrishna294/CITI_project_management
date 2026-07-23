@@ -68,7 +68,7 @@ export function EmptyState({ title = 'Nothing here yet', message, actionLabel, o
     <Paper sx={{ p: 6, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
       {/* An empty screen is the one guaranteed negative space — the brand X
           holds the corner while the CTA does the talking. */}
-      <BrandMark size={280} opacity={0.04} color="text.primary" glyphSx={{ right: -60, top: -80 }} />
+      <BrandMark ground="paper" size={280} opacity={0.04} color="text.primary" glyphSx={{ right: -60, top: -80 }} />
       <Box sx={{ color: 'text.disabled', mb: 2 }}>
         {icon || <EmptyInboxIcon size={56} />}
       </Box>

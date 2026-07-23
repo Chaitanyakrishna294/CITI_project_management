@@ -86,15 +86,28 @@
   --color-thread: #45b39c; /* 6.9:1 as a mark on the ink paper */
   --color-focus-ring: #45b39c;
 
-  /* Dark sidebar: a shade deeper than the canvas so the silhouette holds. */
-  --color-sidebar-bg: #08090c;
-  --color-sidebar-text: #ccd1da;
-  --color-sidebar-active-bg: #e9e7e2;
-  --color-sidebar-active-text: #14161b;
-  --color-sidebar-rule: rgba(255, 255, 255, 0.09);
-  --color-sidebar-hover: rgba(255, 255, 255, 0.05);
+  /* Night sidebar: the full inversion — porcelain rail on the ink canvas,
+     the mirror of light mode's ink rail on porcelain. */
+  --color-sidebar-bg: #f3f1ec;
+  --color-sidebar-text: #454b57; /* 7.2:1 on porcelain */
+  --color-sidebar-active-bg: #181b21; /* ink plate on porcelain */
+  --color-sidebar-active-text: #f3f1ec;
+  --color-sidebar-rule: rgba(0, 0, 0, 0.12);
+  --color-sidebar-hover: rgba(0, 0, 0, 0.06);
 
   --color-scrollbar: #333842; /* graphite thumb on the ink canvas */
+}
+
+/* The brand X shows only when its ground is ink, never on porcelain.
+   Sidebar surfaces are ink in light mode and porcelain in dark; canvas and
+   paper surfaces are the reverse — so each mark's class hides it in the mode
+   where its ground turns cream. */
+[data-theme='dark'] .brand-mark-ink {
+  display: none;
+}
+
+:root:not([data-theme='dark']) .brand-mark-paper {
+  display: none;
 }
 
 html {
