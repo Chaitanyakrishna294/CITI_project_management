@@ -9,7 +9,7 @@
 
 | Field         | Value                            |
 | ------------- | -------------------------------- |
-| Project Name  | ACME Project Management Platform |
+| Project Name  | CITI Project Management Platform |
 | Version       | 1.0                              |
 | Document Type | Product Requirements Document    |
 | Prepared By   | Engineering Team                 |
@@ -22,7 +22,7 @@
 
 ## Purpose
 
-ACME Inc. currently manages projects across multiple departments using disconnected tools such as spreadsheets, emails, and individual tracking systems. This fragmented approach makes it difficult for project managers and stakeholders to monitor project progress, allocate resources effectively, manage budgets, and predict delivery timelines.
+CITI Inc. currently manages projects across multiple departments using disconnected tools such as spreadsheets, emails, and individual tracking systems. This fragmented approach makes it difficult for project managers and stakeholders to monitor project progress, allocate resources effectively, manage budgets, and predict delivery timelines.
 
 The purpose of this project is to build a centralized Project Management Platform that provides a single source of truth for project planning, execution, tracking, and reporting. The platform enables project managers, contributors, and executives to collaborate efficiently while improving project visibility, accountability, and delivery performance.
 
@@ -50,13 +50,13 @@ These issues reduce operational efficiency and increase project delivery risk.
 
 # 4. Product Vision
 
-To provide ACME Inc. with a secure, scalable, and user-friendly project management platform that enables teams to plan, execute, monitor, and deliver projects efficiently while providing real-time operational insights to management.
+To provide CITI Inc. with a secure, scalable, and user-friendly project management platform that enables teams to plan, execute, monitor, and deliver projects efficiently while providing real-time operational insights to management.
 
 
 
 # 5. Business Objectives
 
-The Project Management Platform aims to provide ACME Inc. with centralized visibility and control over project execution, resource utilization, and financial performance. The system should enable stakeholders to make informed decisions through real-time project insights.
+The Project Management Platform aims to provide CITI Inc. with centralized visibility and control over project execution, resource utilization, and financial performance. The system should enable stakeholders to make informed decisions through real-time project insights.
 
 ### BO-01: Centralized Project Visibility
 

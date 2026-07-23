@@ -27,7 +27,10 @@ import DataTable from '../components/DataTable';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as budgetsService from '../services/budgetsService';
 import { useAuth } from '../contexts/AuthContext';
-import { STATUS_COLORS } from '../theme';
+import { useStatusColors } from '../theme';
+import PageHeader from '../components/PageHeader';
+import { EmptyWorkIllustration } from '../components/illustrations';
+import StatusIndicator from '../components/StatusIndicator';
 
 /** Postgres NUMERIC arrives as a string, so every amount is coerced first. */
 function formatCurrency(value, currency = 'USD') {
@@ -63,6 +66,7 @@ function KpiCard({ label, value }) {
 
 export default function Budgets() {
   const { user } = useAuth();
+  const statusColors = useStatusColors();
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -205,10 +209,9 @@ export default function Budgets() {
       id: 'project_status',
       label: 'Status',
       render: (b) => (
-        <Chip
-          size="small"
+        <StatusIndicator
+          color={statusColors[b.project_status] || 'grey.500'}
           label={b.project_status}
-          sx={{ bgcolor: STATUS_COLORS[b.project_status] || 'grey.500', color: 'common.white' }}
         />
       ),
     },
@@ -286,9 +289,14 @@ export default function Budgets() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
-        Budget Management
-      </Typography>
+      <PageHeader
+        title="Budget Management"
+        summary={
+          !loading && !error
+            ? `${budgets.length} budgets · ${budgets.filter((b) => Number(b.actual_spend) > Number(b.planned_amount)).length} over plan`
+            : undefined
+        }
+      />
 
       {loading && <LoadingState variant="cards" rows={4} label="Loading budgets…" />}
 
@@ -298,6 +306,7 @@ export default function Budgets() {
 
       {!loading && !error && budgets.length === 0 && (
         <EmptyState
+          icon={<EmptyWorkIllustration />}
           title="No budgets yet"
           message="Budgets are created per project from the project's Budget tab."
         />

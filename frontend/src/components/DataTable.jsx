@@ -21,7 +21,11 @@
 import { useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -32,7 +36,7 @@ import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import DownloadIcon from '@mui/icons-material/Download';
+import { DownloadIcon } from './icons';
 import { toCsv, downloadCsv } from '../utils/csv';
 
 /** Value a column sorts on, before any custom formatting. */
@@ -68,6 +72,13 @@ export default function DataTable({
   const [order, setOrder] = useState(defaultOrder);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
+
+  // Below md the table becomes a card list (glow-up brief §4.1): horizontal
+  // scrolling loses the identifying first column, so each row renders as a
+  // stacked card instead — first column as the card title, the rest as
+  // label:value lines, the actions column as a footer row.
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const sortedRows = useMemo(() => {
     const column = columns.find((c) => c.id === orderBy);
@@ -129,6 +140,84 @@ export default function DataTable({
         </Toolbar>
       )}
 
+      {isMobile ? (
+        <Box>
+          {sortedRows.length > 1 && (
+            <Box sx={{ px: 2, pb: 2 }}>
+              <TextField
+                select
+                size="small"
+                label="Sort by"
+                value={`${orderBy}:${order}`}
+                onChange={(e) => {
+                  const [columnId, direction] = e.target.value.split(':');
+                  setOrderBy(columnId);
+                  setOrder(direction);
+                  setPage(0);
+                }}
+                sx={{ minWidth: 200 }}
+              >
+                {columns
+                  .filter((column) => column.sortable !== false)
+                  .flatMap((column) => [
+                    <MenuItem key={`${column.id}:asc`} value={`${column.id}:asc`}>
+                      {column.label} · A→Z
+                    </MenuItem>,
+                    <MenuItem key={`${column.id}:desc`} value={`${column.id}:desc`}>
+                      {column.label} · Z→A
+                    </MenuItem>,
+                  ])}
+              </TextField>
+            </Box>
+          )}
+
+          <Box role="list">
+            {visibleRows.map((row) => {
+              const [titleColumn, ...restColumns] = columns;
+              const actionColumns = restColumns.filter((c) => c.id === 'actions');
+              const dataColumns = restColumns.filter((c) => c.id !== 'actions');
+              return (
+                <Box
+                  key={getRowKey(row)}
+                  role="listitem"
+                  sx={{ px: 2, py: 1.5, borderTop: '1px solid', borderColor: 'divider' }}
+                >
+                  <Typography variant="body1" component="div" sx={{ fontWeight: 600 }}>
+                    {titleColumn.render ? titleColumn.render(row) : rawValue(titleColumn, row)}
+                  </Typography>
+                  {dataColumns.map((column) => (
+                    <Box
+                      key={column.id}
+                      sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mt: 0.75 }}
+                    >
+                      <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+                        {column.label}
+                      </Typography>
+                      <Typography variant="body2" component="div" sx={{ textAlign: 'right' }}>
+                        {(column.render ? column.render(row) : rawValue(column, row)) ?? '—'}
+                      </Typography>
+                    </Box>
+                  ))}
+                  {actionColumns.map((column) => (
+                    <Box key={column.id} sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      {column.render ? column.render(row) : null}
+                    </Box>
+                  ))}
+                </Box>
+              );
+            })}
+          </Box>
+          {sortedRows.length === 0 && (
+            <Typography
+              variant="body2"
+              align="center"
+              sx={{ py: 4, color: 'text.secondary', borderTop: '1px solid', borderColor: 'divider' }}
+            >
+              {emptyMessage}
+            </Typography>
+          )}
+        </Box>
+      ) : (
       <TableContainer>
         <Table size={dense ? 'small' : 'medium'}>
           <TableHead>
@@ -175,6 +264,7 @@ export default function DataTable({
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {sortedRows.length > rowsPerPageOptions[0] && (
         <TablePagination

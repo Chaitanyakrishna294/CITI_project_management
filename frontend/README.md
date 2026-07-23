@@ -1,6 +1,6 @@
-# ACME Project Management Platform — Frontend
+# CITI Project Management Platform — Frontend
 
-React + Material UI single-page application for the ACME Project Management
+React + Material UI single-page application for the CITI Project Management
 Platform. Requirements and design specs live in [`../req/`](../req); this
 README covers only how the frontend is put together and how to run it.
 

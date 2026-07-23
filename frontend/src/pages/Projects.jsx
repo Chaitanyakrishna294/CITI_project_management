@@ -29,6 +29,8 @@ import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
+import PageHeader from '../components/PageHeader';
+import { EmptyWorkIllustration } from '../components/illustrations';
 
 const STATUSES = ['active', 'completed', 'delayed', 'archived'];
 const STATUS_COLOR = { active: 'success', completed: 'default', delayed: 'warning', archived: 'default' };
@@ -293,9 +295,14 @@ export default function Projects() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-        Projects
-      </Typography>
+      <PageHeader
+        title="Projects"
+        summary={
+          !loading && !error
+            ? `${projects.length} projects · ${projects.filter((p) => p.status === 'active').length} active · ${projects.filter((p) => p.status === 'delayed').length} delayed`
+            : undefined
+        }
+      />
 
       {showSkeleton && <LoadingState variant="table" label="Loading projects…" />}
 
@@ -307,6 +314,7 @@ export default function Projects() {
           go and the §15 call to action takes the whole screen. */}
       {!showSkeleton && !error && projects.length === 0 && !filtered && (
         <EmptyState
+          icon={<EmptyWorkIllustration />}
           title="No projects yet"
           message="Create a project to start tracking its deliverables, resources and budget."
           actionLabel={canCreate ? 'New Project' : undefined}

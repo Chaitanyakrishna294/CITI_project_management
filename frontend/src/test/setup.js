@@ -12,7 +12,9 @@ import { cleanup } from '@testing-library/react';
 function matchMediaStub(query) {
   return {
     media: query,
-    matches: query.includes('min-width'),
+    // Tests run desktop-viewport and reduced-motion: assertions target final
+    // state, so entrance animations resolve instantly under test.
+    matches: query.includes('min-width') || query.includes('prefers-reduced-motion'),
     onchange: null,
     addListener: vi.fn(), // deprecated, still called by some libraries
     removeListener: vi.fn(),
@@ -22,18 +24,25 @@ function matchMediaStub(query) {
   };
 }
 
-window.matchMedia = vi.fn().mockImplementation(matchMediaStub);
+// Plain functions, NOT vi.fn(): several suites call vi.resetAllMocks() in
+// beforeEach, which would strip a mock's implementation and make matchMedia
+// return undefined — crashing any component that reads .matches during render.
+window.matchMedia = matchMediaStub;
 
 /** Switch the viewport for a single test: setViewport('mobile'). */
 export function setViewport(size) {
-  window.matchMedia = vi.fn().mockImplementation((query) => ({
+  window.matchMedia = (query) => ({
     ...matchMediaStub(query),
-    matches: size === 'desktop' ? query.includes('min-width') : !query.includes('min-width'),
-  }));
+    matches: query.includes('prefers-reduced-motion')
+      ? true
+      : size === 'desktop'
+        ? query.includes('min-width')
+        : !query.includes('min-width'),
+  });
 }
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
-  window.matchMedia = vi.fn().mockImplementation(matchMediaStub);
+  window.matchMedia = matchMediaStub;
 });

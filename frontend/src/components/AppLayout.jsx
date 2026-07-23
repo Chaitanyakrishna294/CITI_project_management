@@ -24,41 +24,70 @@ import InputBase from '@mui/material/InputBase';
 import Tooltip from '@mui/material/Tooltip';
 import { alpha, useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import MenuIcon from '@mui/icons-material/Menu';
-import SearchIcon from '@mui/icons-material/Search';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import FolderIcon from '@mui/icons-material/Folder';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import EngineeringIcon from '@mui/icons-material/Engineering';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import PeopleIcon from '@mui/icons-material/People';
-import LogoutIcon from '@mui/icons-material/Logout';
+import {
+  MenuIcon,
+  SearchIcon,
+  DashboardIcon,
+  ProjectsIcon,
+  DeliverablesIcon,
+  ResourcesIcon,
+  BudgetsIcon,
+  ReportsIcon,
+  TeamsIcon,
+  IndividualsIcon,
+  InsightsIcon,
+  UsersIcon,
+  LogoutIcon,
+  LightModeIcon,
+  DarkModeIcon,
+} from './icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useColorMode } from '../contexts/ColorModeContext';
 
 const DRAWER_WIDTH = 232;
 
 /**
+ * Navigation grouped into sections (glow-up brief §4.3): Work is the project
+ * domain, Teams the team-management domain, Admin the accounts area. A section
+ * renders only when at least one of its items is visible for the role.
+ *
  * `roles: null` means every authenticated role sees the item. Role gating here
  * is presentational only — ProtectedRoute and the backend enforce real access.
  */
-const NAV_ITEMS = [
-  { label: 'Dashboard', to: '/dashboard', icon: <DashboardIcon />, roles: null },
-  { label: 'Projects', to: '/projects', icon: <FolderIcon />, roles: null },
-  { label: 'Deliverables', to: '/deliverables', icon: <AssignmentIcon />, roles: null },
-  { label: 'Resources', to: '/resources', icon: <EngineeringIcon />, roles: null },
+const NAV_SECTIONS = [
   {
-    label: 'Budgets',
-    to: '/budgets',
-    icon: <AccountBalanceIcon />,
-    roles: ['admin', 'project_manager', 'finance'],
+    label: 'Work',
+    items: [
+      { label: 'Dashboard', to: '/dashboard', icon: <DashboardIcon />, roles: null },
+      { label: 'Projects', to: '/projects', icon: <ProjectsIcon />, roles: null },
+      { label: 'Deliverables', to: '/deliverables', icon: <DeliverablesIcon />, roles: null },
+      { label: 'Resources', to: '/resources', icon: <ResourcesIcon />, roles: null },
+      {
+        label: 'Budgets',
+        to: '/budgets',
+        icon: <BudgetsIcon />,
+        roles: ['admin', 'project_manager', 'finance'],
+      },
+      { label: 'Reports', to: '/reports', icon: <ReportsIcon />, roles: null },
+    ],
   },
-  { label: 'Reports', to: '/reports', icon: <AssessmentIcon />, roles: null },
-  { label: 'Users', to: '/users', icon: <PeopleIcon />, roles: ['admin'] },
+  {
+    label: 'Teams',
+    items: [
+      { label: 'Teams', to: '/teams', icon: <TeamsIcon />, roles: null },
+      { label: 'Individuals', to: '/individuals', icon: <IndividualsIcon />, roles: null },
+      { label: 'Team Insights', to: '/team-insights', icon: <InsightsIcon />, roles: null },
+    ],
+  },
+  {
+    label: 'Admin',
+    items: [{ label: 'Users', to: '/users', icon: <UsersIcon />, roles: ['admin'] }],
+  },
 ];
 
 export default function AppLayout() {
   const { user, logout } = useAuth();
+  const { mode, toggleMode } = useColorMode();
   const navigate = useNavigate();
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
@@ -81,39 +110,85 @@ export default function AppLayout() {
     }
   }
 
-  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user?.role));
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.roles || item.roles.includes(user?.role)),
+  })).filter((section) => section.items.length > 0);
 
   const navigation = (
     <>
       <Toolbar />
-      <List component="nav" aria-label="Main navigation" sx={{ px: 1 }}>
-        {visibleItems.map((item) => (
-          <ListItemButton
-            key={item.to}
-            component={NavLink}
-            to={item.to}
-            onClick={() => setMobileOpen(false)}
+      {/* Solid deep-navy sidebar (glow-up brief v2 §2): the app's silhouette
+          comes from this surface, not from a tinted white list. Colours ride
+          the --color-sidebar-* custom properties so dark mode retunes them
+          without any component logic. */}
+      <Box component="nav" aria-label="Main navigation" sx={{ px: 1.5, pb: 3 }}>
+        {visibleSections.map((section, sectionIndex) => (
+          <List
+            key={section.label}
+            subheader={
+              <Typography
+                component="div"
+                variant="caption"
+                sx={{
+                  px: 1,
+                  pt: sectionIndex === 0 ? 2 : 3,
+                  pb: 1,
+                  color: 'var(--color-sidebar-text)',
+                  opacity: 0.62,
+                  fontWeight: 600,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {section.label}
+              </Typography>
+            }
+            dense
+            disablePadding
             sx={{
-              borderRadius: 1,
-              mb: 0.5,
-              color: 'text.primary',
-              '& .MuiListItemIcon-root': { color: 'text.secondary' },
-              // Harbor Blue active state: a soft navy tint (secondary #dce6f9)
-              // with navy text, rather than a solid filled pill.
-              '&.active': {
-                bgcolor: '#dce6f9',
-                color: 'primary.main',
-                '& .MuiListItemIcon-root': { color: 'inherit' },
-                '& .MuiListItemText-primary': { fontWeight: 600 },
-                '&:hover': { bgcolor: '#cfdcf5' },
-              },
+              // A thin inset rule separates groups — structure, not just labels.
+              ...(sectionIndex > 0 && {
+                borderTop: '1px solid var(--color-sidebar-rule)',
+                mt: 2,
+              }),
             }}
           >
-            <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'body2' }} />
-          </ListItemButton>
+            {section.items.map((item) => (
+              <ListItemButton
+                key={item.to}
+                component={NavLink}
+                to={item.to}
+                onClick={() => setMobileOpen(false)}
+                sx={{
+                  borderRadius: 1,
+                  mb: 0.5,
+                  color: 'var(--color-sidebar-text)',
+                  '& .MuiListItemIcon-root': { color: 'inherit', opacity: 0.75 },
+                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
+                  // The navy focus ring vanishes on navy — use the cream.
+                  '&:focus-visible': {
+                    outline: '2px solid var(--color-sidebar-active-bg)',
+                    outlineOffset: -2,
+                  },
+                  // Active state: warm off-white plate with navy text — an
+                  // inversion, not a tint, so the current page is unmissable.
+                  '&.active': {
+                    bgcolor: 'var(--color-sidebar-active-bg)',
+                    color: 'var(--color-sidebar-active-text)',
+                    '& .MuiListItemIcon-root': { color: 'inherit', opacity: 1 },
+                    '& .MuiListItemText-primary': { fontWeight: 600 },
+                    '&:hover': { bgcolor: 'var(--color-sidebar-active-bg)' },
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'body2' }} />
+              </ListItemButton>
+            ))}
+          </List>
         ))}
-      </List>
+      </Box>
     </>
   );
 
@@ -155,7 +230,7 @@ export default function AppLayout() {
               fontWeight: 700,
             }}
           >
-            ACME Project Management
+            CITI Project Management
           </Typography>
 
           <Box
@@ -187,6 +262,16 @@ export default function AppLayout() {
 
           <Box sx={{ flexGrow: 1 }} />
 
+          <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <IconButton
+              color="inherit"
+              aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              onClick={toggleMode}
+            >
+              {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Tooltip>
+
           {user && (
             <>
               <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
@@ -217,9 +302,8 @@ export default function AppLayout() {
               '& .MuiDrawer-paper': {
                 width: DRAWER_WIDTH,
                 boxSizing: 'border-box',
-                bgcolor: '#f8fafc', // Harbor sidebar tone
-                borderRight: '1px solid',
-                borderColor: 'divider',
+                bgcolor: 'var(--color-sidebar-bg)',
+                borderRight: 'none',
               },
             }}
           >
@@ -231,7 +315,7 @@ export default function AppLayout() {
             open={mobileOpen}
             onClose={() => setMobileOpen(false)}
             ModalProps={{ keepMounted: true }} // Faster reopen on mobile.
-            sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', bgcolor: '#f8fafc' } }}
+            sx={{ '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box', bgcolor: 'var(--color-sidebar-bg)' } }}
           >
             {navigation}
           </Drawer>
