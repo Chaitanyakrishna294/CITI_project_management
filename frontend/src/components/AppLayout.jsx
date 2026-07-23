@@ -238,13 +238,16 @@ export default function AppLayout() {
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
       {/* App-wide watermark: the brand X cropped by the viewport's own
           corner, pinned at zIndex -1 — above the canvas colour, below every
-          surface, so it only lives in the page's negative space. */}
+          surface. Paper-white on the cream canvas reads as an emboss (a
+          brighter shape pressed into the page), and disappears seamlessly
+          wherever a white card covers it. Same trick holds in dark mode,
+          where paper sits one step lighter than the ink canvas. */}
       <BrandMark
         fixed
-        size={480}
-        opacity={0.04}
-        color="text.primary"
-        glyphSx={{ right: -90, bottom: -140 }}
+        size={560}
+        opacity={0.9}
+        color="background.paper"
+        glyphSx={{ right: -100, bottom: -160 }}
       />
       {/* WCAG 2.4.1 bypass block: first focusable element jumps past the bar
           and sidebar. Visually hidden until keyboard focus lands on it. */}

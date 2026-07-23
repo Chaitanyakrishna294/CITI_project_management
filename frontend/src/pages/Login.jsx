@@ -99,12 +99,23 @@ export default function Login() {
           alignItems: 'center',
           justifyContent: 'center',
           p: 2,
+          // The form side carries the same paper-white emboss the app canvas
+          // wears, so login and app share one background language.
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        <BrandMark
+          size={560}
+          opacity={0.9}
+          color="background.paper"
+          glyphSx={{ right: -100, bottom: -160 }}
+        />
       {/* borderRadius stays the user-set 20px, pinned as a string so the new
           theme shape scale (sx numbers multiply by shape.borderRadius) can't
           drift it. */}
-      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider', borderRadius: '20px' }}>
+      {/* position:relative lifts the card above the emboss layer behind it. */}
+      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider', borderRadius: '20px', position: 'relative' }}>
         {/* The sign-in heading keeps the display-serif identity (glow-up brief
             v2 §2); the product name below also serves small screens, where
             the brand panel is hidden. */}
