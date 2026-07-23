@@ -23,6 +23,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import { AddPersonIcon } from '../components/icons';
 
 import DataTable from '../components/DataTable';
+import StatusIndicator from '../components/StatusIndicator';
 import ConfirmDialog from '../components/ConfirmDialog';
 import MetadataEditor from '../components/MetadataEditor';
 import { toPairs, fromPairs } from '../utils/metadata';
@@ -144,14 +145,13 @@ export default function Individuals() {
     {
       id: 'is_direct_staff',
       label: 'Staff type',
-      render: (row) => (
-        <Chip
-          size="small"
-          label={row.is_direct_staff ? 'Direct' : 'Non-direct'}
-          color={row.is_direct_staff ? 'default' : 'secondary'}
-          variant={row.is_direct_staff ? 'outlined' : 'filled'}
-        />
-      ),
+      // Staff type is state, not a count, so it renders as dot+label per the
+      // glow-up brief v2 §2 — the same treatment TeamInsights gives this state.
+      // Only the notable value gets a mark, in neutral slate: a non-direct
+      // roster entry is a fact, not a "needs acting on" signal, so the ochre
+      // accent stays reserved for the insights flags.
+      render: (row) =>
+        row.is_direct_staff ? 'Direct' : <StatusIndicator color="secondary.main" label="Non-direct" />,
       sortValue: (row) => (row.is_direct_staff ? 0 : 1),
       exportValue: (row) => (row.is_direct_staff ? 'Direct' : 'Non-direct'),
     },
@@ -169,7 +169,7 @@ export default function Individuals() {
             label: 'Actions',
             align: 'right',
             sortable: false,
-            exportValue: () => '',
+            exportable: false,
             render: (row) => (
               <>
                 <Button size="small" onClick={() => openEdit(row)}>

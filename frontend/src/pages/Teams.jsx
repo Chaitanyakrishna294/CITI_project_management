@@ -38,12 +38,23 @@ export default function Teams() {
   const { user } = useAuth();
   const canManage = user?.role === 'admin' || user?.role === 'project_manager';
 
+  // Server-side search (req/UI_UX_Design&UserFlow.md §12) — the teams API
+  // matches on name or location.
+  const [search, setSearch] = useState('');
+
   const [reloadToken, setReloadToken] = useState(0);
-  const [result, setResult] = useState({ key: null, teams: [], individuals: [], error: '' });
-  const requestKey = String(reloadToken);
+  const [result, setResult] = useState({ key: null, teams: [], error: '' });
+  const requestKey = JSON.stringify({ search, reloadToken });
   const loading = result.key !== requestKey;
-  const { teams, individuals } = result;
+  const { teams } = result;
   const error = loading ? '' : result.error;
+  // Only the very first load gets the skeleton — swapping the table out on
+  // every keystroke would unmount the search field the user is typing into.
+  const showSkeleton = loading && result.key === null;
+
+  // Individuals feed the leader / reports-to selects in the dialog; a failure
+  // here just leaves those selects empty, it shouldn't sink the list.
+  const [individuals, setIndividuals] = useState([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -60,32 +71,26 @@ export default function Teams() {
 
   useEffect(() => {
     let active = true;
-    // Individuals feed the leader / reports-to selects in the dialog.
-    Promise.all([teamsService.listTeams(), teamsService.listIndividuals()])
-      .then(([teamsData, individualsData]) => {
-        if (active) {
-          setResult({
-            key: requestKey,
-            teams: teamsData.teams,
-            individuals: individualsData.individuals,
-            error: '',
-          });
-        }
+    teamsService
+      .listTeams(search)
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, teams: data.teams, error: '' });
       })
       .catch((err) => {
-        if (active) {
-          setResult((prev) => ({
-            key: requestKey,
-            teams: prev.teams,
-            individuals: prev.individuals,
-            error: err.message,
-          }));
-        }
+        if (active) setResult((prev) => ({ key: requestKey, teams: prev.teams, error: err.message }));
       });
     return () => {
       active = false;
     };
-  }, [requestKey]);
+  }, [search, requestKey]);
+
+  useEffect(() => {
+    teamsService
+      .listIndividuals()
+      .then((data) => setIndividuals(data.individuals))
+      .catch(() => {});
+  }, []);
 
   function openCreate() {
     setEditing(null);
@@ -121,7 +126,7 @@ export default function Teams() {
     try {
       if (editing) {
         await teamsService.updateTeam(editing, payload);
-        setToast('Changes saved');
+        setToast(`${form.name} saved`);
       } else {
         await teamsService.createTeam(payload);
         setToast(`${form.name} created`);
@@ -162,7 +167,7 @@ export default function Teams() {
             label: 'Actions',
             align: 'right',
             sortable: false,
-            exportValue: () => '',
+            exportable: false,
             render: (row) => (
               <>
                 <Button size="small" onClick={() => openEdit(row)}>
@@ -196,11 +201,13 @@ export default function Teams() {
         }
       />
 
-      {loading && <LoadingState variant="table" label="Loading teams…" />}
+      {showSkeleton && <LoadingState variant="table" label="Loading teams…" />}
 
-      {!loading && error && <ErrorState title="Could not load teams" error={error} onRetry={reload} />}
+      {!showSkeleton && error && <ErrorState title="Could not load teams" error={error} onRetry={reload} />}
 
-      {!loading && !error && teams.length === 0 && (
+      {/* With no search applied there is nothing to filter, so the toolbar can
+          go and the §15 call to action takes the whole screen. */}
+      {!showSkeleton && !error && teams.length === 0 && !search && (
         <EmptyState
           icon={<EmptyPeopleIllustration />}
           title="No teams yet"
@@ -210,12 +217,21 @@ export default function Teams() {
         />
       )}
 
-      {!loading && !error && teams.length > 0 && (
+      {!showSkeleton && !error && (teams.length > 0 || search) && (
         <DataTable
           columns={columns}
           rows={teams}
           defaultOrderBy="name"
           exportFilename="teams.csv"
+          emptyMessage="No teams match this search."
+          toolbar={
+            <TextField
+              label="Search" size="small" sx={{ minWidth: 200, flexGrow: 1 }}
+              placeholder="Search by name or location"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          }
         />
       )}
 

@@ -23,7 +23,7 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
       // The auth context object and its `useAuth` accessor live beside the
       // provider that owns them — the conventional React shape, and splitting
       // them buys nothing but an extra fast-refresh round trip in dev.

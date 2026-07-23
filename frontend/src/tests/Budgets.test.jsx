@@ -189,6 +189,7 @@ describe('Budgets page', () => {
       await waitFor(() => {
         expect(screen.queryByRole('heading', { name: 'Edit Planned Amount' })).not.toBeInTheDocument();
       });
+      expect(await screen.findByText('Website Revamp budget updated')).toBeInTheDocument();
     });
   });
 
@@ -229,6 +230,7 @@ describe('Budgets page', () => {
       await waitFor(() => {
         expect(screen.queryByRole('heading', { name: 'Record Expense' })).not.toBeInTheDocument();
       });
+      expect(await screen.findByText('Expense recorded for Website Revamp')).toBeInTheDocument();
     });
   });
 });

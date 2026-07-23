@@ -92,7 +92,7 @@ describe('TeamDetails page', () => {
     await waitFor(() => {
       expect(teamsService.addTeamMember).toHaveBeenCalledWith(team.id, spare.id);
     });
-    expect(await screen.findByText('Member added')).toBeInTheDocument();
+    expect(await screen.findByText('Spare Person added to Atlas')).toBeInTheDocument();
   });
 
   it('removes a member via the ConfirmDialog', async () => {

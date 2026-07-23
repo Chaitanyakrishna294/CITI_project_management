@@ -137,13 +137,16 @@ describe('Projects page', () => {
     it('shows "New Project" for admin', async () => {
       mockList([]);
       renderWithAuth(<Projects />, { user: adminUser });
-      expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
+      await screen.findByText('No projects yet');
+      // Header action plus the empty-state call to action.
+      expect(screen.getAllByRole('button', { name: 'New Project' })).toHaveLength(2);
     });
 
     it('shows "New Project" for project_manager', async () => {
       mockList([]);
       renderWithAuth(<Projects />, { user: pmUser });
-      expect(await screen.findByRole('button', { name: 'New Project' })).toBeInTheDocument();
+      await screen.findByText('No projects yet');
+      expect(screen.getAllByRole('button', { name: 'New Project' })).toHaveLength(2);
     });
 
     it('hides "New Project" for viewer', async () => {
@@ -153,14 +156,14 @@ describe('Projects page', () => {
       expect(screen.queryByRole('button', { name: 'New Project' })).not.toBeInTheDocument();
     });
 
-    it('offers "New Project" from the table toolbar once projects exist', async () => {
+    it('offers "New Project" from the page header once projects exist', async () => {
       mockList([project1]);
       renderWithAuth(<Projects />, { user: adminUser });
       await screen.findByText('Website Revamp');
       expect(screen.getByRole('button', { name: 'New Project' })).toBeInTheDocument();
     });
 
-    it('hides the toolbar "New Project" from a viewer once projects exist', async () => {
+    it('hides the header "New Project" from a viewer once projects exist', async () => {
       mockList([project1]);
       renderWithAuth(<Projects />, { user: viewerUser });
       await screen.findByText('Website Revamp');
@@ -411,7 +414,8 @@ describe('Projects page', () => {
       renderWithAuth(<Projects />, { user: pmUser });
       await screen.findByText('No projects yet');
 
-      await user.click(screen.getByRole('button', { name: 'New Project' }));
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
 
       expect(await screen.findByRole('heading', { name: 'New Project' })).toBeInTheDocument();
       const managerField = screen.getByLabelText('Manager');
@@ -428,7 +432,8 @@ describe('Projects page', () => {
       renderWithAuth(<Projects />, { user: adminUser });
       await screen.findByText('No projects yet');
 
-      await user.click(screen.getByRole('button', { name: 'New Project' }));
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
       expect(await screen.findByRole('heading', { name: 'New Project' })).toBeInTheDocument();
 
       // The admin's dialog field is a required select, so its label carries the
@@ -446,7 +451,8 @@ describe('Projects page', () => {
       renderWithAuth(<Projects />, { user: pmUser });
       await screen.findByText('No projects yet');
 
-      await user.click(screen.getByRole('button', { name: 'New Project' }));
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
       await screen.findByRole('heading', { name: 'New Project' });
 
       await user.type(screen.getByLabelText('Name *'), 'New Cool Project');
@@ -466,6 +472,26 @@ describe('Projects page', () => {
       expect(projectsService.listProjects).toHaveBeenCalled();
     });
 
+    it('disables and relabels the submit button while the create is in flight, then confirms with a snackbar', async () => {
+      const user = userEvent.setup();
+      mockList([]);
+      let resolveCreate;
+      projectsService.createProject.mockReturnValue(new Promise((resolve) => { resolveCreate = resolve; }));
+      renderWithAuth(<Projects />, { user: pmUser });
+      await screen.findByText('No projects yet');
+
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
+      await screen.findByRole('heading', { name: 'New Project' });
+      await user.type(screen.getByLabelText('Name *'), 'Slow Project');
+      await user.click(screen.getByRole('button', { name: 'Create' }));
+
+      expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled();
+
+      resolveCreate({ project: { id: 21 } });
+      expect(await screen.findByText('Slow Project created')).toBeInTheDocument();
+    });
+
     it('a rejected createProject shows the error inside the dialog and does not close it', async () => {
       const user = userEvent.setup();
       mockList([]);
@@ -473,7 +499,8 @@ describe('Projects page', () => {
       renderWithAuth(<Projects />, { user: pmUser });
       await screen.findByText('No projects yet');
 
-      await user.click(screen.getByRole('button', { name: 'New Project' }));
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
       await screen.findByRole('heading', { name: 'New Project' });
       await user.type(screen.getByLabelText('Name *'), 'Dup Project');
 
@@ -489,7 +516,8 @@ describe('Projects page', () => {
       renderWithAuth(<Projects />, { user: adminUser });
       await screen.findByText('No projects yet');
 
-      await user.click(screen.getByRole('button', { name: 'New Project' }));
+      // Two buttons while the list is empty (header + empty-state CTA).
+      await user.click(screen.getAllByRole('button', { name: 'New Project' })[0]);
       await screen.findByRole('heading', { name: 'New Project' });
 
       // Leave Name and Manager empty and submit.

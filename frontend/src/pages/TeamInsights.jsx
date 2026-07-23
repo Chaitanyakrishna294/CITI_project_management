@@ -14,10 +14,8 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
-import Chip from '@mui/material/Chip';
 
 import DataTable from '../components/DataTable';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
@@ -92,9 +90,13 @@ const columns = [
   {
     id: 'reports_to_org_leader',
     label: 'Reports to org leader',
+    // Status meaning is dot+label, never a filled pill (glow-up brief v2 §2):
+    // the primary dot marks the teams behind the "report to org leader" count,
+    // under the column heading that names the state. Primary, not the ochre
+    // accent — a reporting line is structure, not something to act on.
     render: (row) =>
       row.reports_to_org_leader ? (
-        <Chip size="small" color="primary" label={row.reports_to_name} />
+        <StatusIndicator color="primary.main" label={row.reports_to_name} />
       ) : (
         row.reports_to_name || '—'
       ),
@@ -145,6 +147,9 @@ export default function TeamInsights() {
         <ErrorState title="Could not load team insights" error={error} onRetry={reload} />
       )}
 
+      {/* Insights are a read-only view — teams are created on the Teams page,
+          so the §15 call to action stays in the message rather than a button
+          this page could not honour for every role. */}
       {!loading && !error && teams.length === 0 && (
         <EmptyState
           icon={<EmptyDataIllustration />}

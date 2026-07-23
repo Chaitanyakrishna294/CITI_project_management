@@ -55,7 +55,7 @@ beforeEach(() => {
 });
 
 describe('ProjectDetails page', () => {
-  it('renders nothing while loading (before getProject resolves)', async () => {
+  it('shows a loading skeleton while getProject is pending', async () => {
     let resolvePromise;
     projectsService.getProject.mockReturnValue(
       new Promise((resolve) => {
@@ -64,6 +64,7 @@ describe('ProjectDetails page', () => {
     );
     renderDetails({ user: adminUser });
 
+    expect(screen.getByRole('status')).toBeInTheDocument();
     expect(screen.queryByText('Website Revamp')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
 
@@ -78,7 +79,7 @@ describe('ProjectDetails page', () => {
     expect(await screen.findByText('Project not found')).toBeInTheDocument();
   });
 
-  it('shows project name, status chip, manager, and description once loaded', async () => {
+  it('shows project name, status indicator, manager, and description once loaded', async () => {
     projectsService.getProject.mockResolvedValue({ project });
     renderDetails({ user: adminUser });
 

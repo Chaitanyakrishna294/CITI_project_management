@@ -122,6 +122,22 @@ describe('Teams page', () => {
     expect(screen.getByRole('dialog', { name: 'Add a team' })).toBeInTheDocument();
   });
 
+  it('searches server-side and keeps the toolbar when nothing matches', async () => {
+    const user = userEvent.setup();
+    renderWithAuth(<Teams />, { user: adminUser });
+    await screen.findByText('Atlas');
+
+    teamsService.listTeams.mockResolvedValue({ teams: [] });
+    await user.type(screen.getByLabelText('Search'), 'zz');
+
+    await waitFor(() => {
+      expect(teamsService.listTeams).toHaveBeenCalledWith('zz');
+    });
+    expect(await screen.findByText('No teams match this search.')).toBeInTheDocument();
+    // The empty-state CTA is reserved for a truly empty directory.
+    expect(screen.queryByText('No teams yet')).not.toBeInTheDocument();
+  });
+
   it('deletes via the ConfirmDialog', async () => {
     const user = userEvent.setup();
     teamsService.deleteTeam.mockResolvedValue({ deleted: true });

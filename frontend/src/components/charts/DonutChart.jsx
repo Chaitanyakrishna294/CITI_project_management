@@ -85,7 +85,7 @@ export default function DonutChart({ slices, centerLabel, centerValue, onSliceHo
           to: { strokeDashoffset: 0 },
         },
         '& .donut-segment': {
-          animation: 'donutSweep 0.2s ease-out both',
+          animation: 'donutSweep 0.15s ease-out both',
           transition: 'opacity 0.2s ease-out',
         },
         '@media (prefers-reduced-motion: reduce)': {
@@ -122,7 +122,9 @@ export default function DonutChart({ slices, centerLabel, centerValue, onSliceHo
             pathLength: 100,
             strokeDasharray: 100,
             style: {
-              animationDelay: `${index * 40}ms`,
+              // Capped stagger keeps the whole entrance inside the documented
+              // sub-200ms motion budget even for four-plus segments.
+              animationDelay: `${Math.min(index * 15, 45)}ms`,
               opacity: dimmed ? 0.4 : 1,
             },
             onMouseEnter: () => enter(slice),

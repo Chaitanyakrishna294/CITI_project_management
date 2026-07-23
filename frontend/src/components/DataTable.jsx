@@ -11,7 +11,10 @@
  *   {
  *     id:          'name',                       // required, unique
  *     label:       'Name',                       // header text
- *     render:      (row) => <Link…/>,            // cell content (default: row[id])
+ *     render:      (row) => <Link…/>,            // cell content; without it the cell
+ *                                                //   shows sortValue(row) if defined,
+ *                                                //   else row[id] — add render when
+ *                                                //   sortValue isn't display-safe
  *     sortValue:   (row) => row.name.toLowerCase(),  // default: row[id]
  *     exportValue: (row) => row.name,            // default: row[id]
  *     align:       'right',
@@ -68,7 +71,11 @@ export default function DataTable({
   emptyMessage = 'No records to display.',
   dense = false,
 }) {
-  const [orderBy, setOrderBy] = useState(defaultOrderBy || columns[0]?.id);
+  // Default sort must land on a sortable column — the mobile Sort-by select
+  // only lists sortable ones, and an out-of-range value blanks the control.
+  const [orderBy, setOrderBy] = useState(
+    defaultOrderBy || columns.find((c) => c.sortable !== false)?.id
+  );
   const [order, setOrder] = useState(defaultOrder);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
@@ -160,11 +167,13 @@ export default function DataTable({
                 {columns
                   .filter((column) => column.sortable !== false)
                   .flatMap((column) => [
+    // Direction-neutral wording: these options also cover dates,
+                    // numbers and flags, where "A→Z" misdescribes the sort.
                     <MenuItem key={`${column.id}:asc`} value={`${column.id}:asc`}>
-                      {column.label} · A→Z
+                      {column.label} · ascending
                     </MenuItem>,
                     <MenuItem key={`${column.id}:desc`} value={`${column.id}:desc`}>
-                      {column.label} · Z→A
+                      {column.label} · descending
                     </MenuItem>,
                   ])}
               </TextField>
@@ -193,7 +202,15 @@ export default function DataTable({
                       <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
                         {column.label}
                       </Typography>
-                      <Typography variant="body2" component="div" sx={{ textAlign: 'right' }}>
+                      <Typography
+                        variant="body2"
+                        component="div"
+                        sx={{
+                          textAlign: 'right',
+                          // Same tabular figures the desktop alignRight cells get.
+                          ...(column.align === 'right' && { fontVariantNumeric: 'tabular-nums' }),
+                        }}
+                      >
                         {(column.render ? column.render(row) : rawValue(column, row)) ?? '—'}
                       </Typography>
                     </Box>

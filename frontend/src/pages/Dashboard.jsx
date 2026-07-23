@@ -11,7 +11,6 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
-import Chip from '@mui/material/Chip';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
@@ -248,7 +247,9 @@ export default function Dashboard() {
                         }
                         secondary={`${p.manager_name} · ends ${p.end_date || 'n/a'}`}
                       />
-                      <StatusIndicator color="warning.main" label={p.status} />
+                      {/* Dot + label must agree (UI_UX §14): the risk framing
+                          comes from the panel, not a recoloured status dot. */}
+                      <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={p.status} />
                     </ListItem>
                   ))}
                 </List>

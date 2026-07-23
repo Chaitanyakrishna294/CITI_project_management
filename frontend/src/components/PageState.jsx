@@ -124,6 +124,7 @@ export default function PageState({
   emptyMessage,
   emptyActionLabel,
   onEmptyAction,
+  emptyIcon,
   children,
 }) {
   if (loading) return <LoadingState variant={loadingVariant} rows={loadingRows} />;
@@ -135,6 +136,7 @@ export default function PageState({
         message={emptyMessage}
         actionLabel={emptyActionLabel}
         onAction={onEmptyAction}
+        icon={emptyIcon}
       />
     );
   }

@@ -5,7 +5,8 @@
  * glance. The label is always present (status is never colour alone, req
  * UI_UX §14), and the dot is aria-hidden because the text carries the meaning.
  *
- *   <StatusIndicator color={STATUS_COLORS.active} label="Active" />
+ *   const statusColors = useStatusColors(); // mode-aware — never the static map
+ *   <StatusIndicator color={statusColors.active} label="Active" />
  *   <StatusIndicator color="warning.main" label="Not co-located" />
  */
 import Box from '@mui/material/Box';

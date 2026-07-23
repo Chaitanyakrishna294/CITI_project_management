@@ -9,6 +9,7 @@ import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ShowPasswordIcon, HidePasswordIcon } from '../components/icons';
+import { DISPLAY_FONT } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -48,7 +49,14 @@ export default function Login() {
       }}
     >
       <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'primary.main', fontWeight: 700 }}>
+        {/* Product name carries the same display-serif identity as in-app page
+            titles (glow-up brief v2 §2) — pre-auth is not exempt. */}
+        <Typography
+          variant="h5"
+          component="h1"
+          gutterBottom
+          sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}
+        >
           CITI Project Management
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>

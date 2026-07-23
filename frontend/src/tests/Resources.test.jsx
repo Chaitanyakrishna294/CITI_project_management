@@ -130,14 +130,15 @@ describe('Resources page', () => {
       mockList([]);
       renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('No resources yet');
-      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
+      // Two entry points: the page-header action and the empty-state CTA.
+      expect(screen.getAllByRole('button', { name: 'Add Resource' })).toHaveLength(2);
     });
 
     it('offers the empty-state call to action to a project_manager', async () => {
       mockList([]);
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('No resources yet');
-      expect(screen.getByRole('button', { name: 'Add Resource' })).toBeInTheDocument();
+      expect(screen.getAllByRole('button', { name: 'Add Resource' })).toHaveLength(2);
     });
 
     it('omits the empty-state call to action for a viewer', async () => {
@@ -149,7 +150,7 @@ describe('Resources page', () => {
   });
 
   describe('utilization display', () => {
-    it('shows the utilization bar with no "Over-allocated" chip when at/under capacity', async () => {
+    it('shows the utilization bar with no "Over-allocated" indicator when at/under capacity', async () => {
       mockList([resource1]);
       renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('Pat Manager');
@@ -159,7 +160,7 @@ describe('Resources page', () => {
       expect(within(row).queryByText('Over-allocated')).not.toBeInTheDocument();
     });
 
-    it('shows the "Over-allocated" chip when total_allocation_pct exceeds weekly_capacity', async () => {
+    it('shows the "Over-allocated" indicator when total_allocation_pct exceeds weekly_capacity', async () => {
       mockList([resourceOver]);
       renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('Vera Viewer');
@@ -305,7 +306,7 @@ describe('Resources page', () => {
       renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('No resources yet');
 
-      await user.click(screen.getByRole('button', { name: 'Add Resource' }));
+      await user.click(screen.getAllByRole('button', { name: 'Add Resource' })[0]);
       expect(await screen.findByRole('heading', { name: 'Add Resource' })).toBeInTheDocument();
 
       const userField = screen.getByLabelText('User *');
@@ -329,7 +330,7 @@ describe('Resources page', () => {
       renderWithAuth(<Resources />, { user: pmUser });
       await screen.findByText('No resources yet');
 
-      await user.click(screen.getByRole('button', { name: 'Add Resource' }));
+      await user.click(screen.getAllByRole('button', { name: 'Add Resource' })[0]);
       expect(await screen.findByRole('heading', { name: 'Add Resource' })).toBeInTheDocument();
 
       // No name list is available to a PM, so the id is entered directly.
@@ -362,7 +363,7 @@ describe('Resources page', () => {
       renderWithAuth(<Resources />, { user: adminUser });
       await screen.findByText('No resources yet');
 
-      await user.click(screen.getByRole('button', { name: 'Add Resource' }));
+      await user.click(screen.getAllByRole('button', { name: 'Add Resource' })[0]);
       await screen.findByRole('heading', { name: 'Add Resource' });
 
       const dialog = screen.getByRole('dialog');
@@ -387,6 +388,7 @@ describe('Resources page', () => {
         expect(screen.queryByRole('heading', { name: 'Add Resource' })).not.toBeInTheDocument();
       });
       expect(resourcesService.listResources).toHaveBeenCalled();
+      expect(await screen.findByText('Casey Consultant added')).toBeInTheDocument();
     });
 
     it('submitting an edit calls updateResource(id, {title, department, weekly_capacity}) without user_id', async () => {
@@ -414,6 +416,7 @@ describe('Resources page', () => {
 
       const call = resourcesService.updateResource.mock.calls[0];
       expect(call[1]).not.toHaveProperty('user_id');
+      expect(await screen.findByText('Pat Manager updated')).toBeInTheDocument();
     });
 
     it('a rejected submit shows the error in the dialog', async () => {

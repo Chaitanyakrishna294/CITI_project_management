@@ -45,7 +45,9 @@ export default function BarChart({ data, series, formatValue = (v) => String(v),
           const stackTop = groupTop + (ROW_HEIGHT - stackHeight) / 2;
 
           return (
-            <g key={label}>
+            // Keyed by position, not label: two missing labels both coerce to
+            // '—' and duplicate keys would drop a row.
+            <g key={rowIndex}>
               <title>{label}</title>
               <text
                 x={0}

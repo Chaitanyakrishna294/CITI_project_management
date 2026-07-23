@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { renderWithAuth, screen, within } from '../test/test-utils';
 import DeliverablesPanel from '../components/DeliverablesPanel';
@@ -25,14 +25,14 @@ describe('DeliverablesPanel', () => {
     deliverablesService.listDeliverables.mockResolvedValue({ deliverables: [] });
     renderPanel({ user: { id: 1, role: 'team_member' }, canManage: false });
 
-    expect(await screen.findByText('No deliverables yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No deliverables yet')).toBeInTheDocument();
   });
 
   it('shows "Add Deliverable" only when canManage', async () => {
     deliverablesService.listDeliverables.mockResolvedValue({ deliverables: [] });
     renderPanel({ user: { id: 1, role: 'project_manager' }, canManage: true });
 
-    await screen.findByText('No deliverables yet.');
+    await screen.findByText('No deliverables yet');
     expect(screen.getByRole('button', { name: 'Add Deliverable' })).toBeInTheDocument();
   });
 
@@ -40,7 +40,7 @@ describe('DeliverablesPanel', () => {
     deliverablesService.listDeliverables.mockResolvedValue({ deliverables: [] });
     renderPanel({ user: { id: 1, role: 'team_member' }, canManage: false });
 
-    await screen.findByText('No deliverables yet.');
+    await screen.findByText('No deliverables yet');
     expect(screen.queryByRole('button', { name: 'Add Deliverable' })).not.toBeInTheDocument();
   });
 
@@ -104,17 +104,8 @@ describe('DeliverablesPanel', () => {
   });
 
   describe('delete confirmation', () => {
-    let confirmSpy;
-    beforeEach(() => {
-      confirmSpy = vi.spyOn(window, 'confirm');
-    });
-    afterEach(() => {
-      confirmSpy.mockRestore();
-    });
-
-    it('does not delete when window.confirm returns false', async () => {
+    it('does not delete when the ConfirmDialog is cancelled', async () => {
       const user = userEvent.setup();
-      confirmSpy.mockReturnValue(false);
       deliverablesService.listDeliverables.mockResolvedValue({
         deliverables: [{ id: 1, title: 'Task A', status: 'in_progress', owner_id: 99, owner_name: 'Other' }],
       });
@@ -123,13 +114,15 @@ describe('DeliverablesPanel', () => {
       await screen.findByText('Task A');
       await user.click(screen.getByRole('button', { name: 'Delete' }));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Delete "Task A"?')).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
       expect(deliverablesService.deleteDeliverable).not.toHaveBeenCalled();
     });
 
-    it('deletes when window.confirm returns true', async () => {
+    it('deletes after confirming in the ConfirmDialog', async () => {
       const user = userEvent.setup();
-      confirmSpy.mockReturnValue(true);
       deliverablesService.listDeliverables.mockResolvedValue({
         deliverables: [{ id: 1, title: 'Task A', status: 'in_progress', owner_id: 99, owner_name: 'Other' }],
       });
@@ -139,7 +132,9 @@ describe('DeliverablesPanel', () => {
       await screen.findByText('Task A');
       await user.click(screen.getByRole('button', { name: 'Delete' }));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
       expect(deliverablesService.deleteDeliverable).toHaveBeenCalledWith(1);
     });
   });
@@ -152,7 +147,7 @@ describe('DeliverablesPanel', () => {
     });
     renderPanel({ user: { id: 1, role: 'admin' }, canManage: true });
 
-    await screen.findByText('No deliverables yet.');
+    await screen.findByText('No deliverables yet');
     await user.click(screen.getByRole('button', { name: 'Add Deliverable' }));
 
     expect(await screen.findByLabelText('Owner')).toBeInTheDocument();
@@ -164,7 +159,7 @@ describe('DeliverablesPanel', () => {
     deliverablesService.listDeliverables.mockResolvedValue({ deliverables: [] });
     renderPanel({ user: { id: 1, role: 'project_manager' }, canManage: true });
 
-    await screen.findByText('No deliverables yet.');
+    await screen.findByText('No deliverables yet');
     await user.click(screen.getByRole('button', { name: 'Add Deliverable' }));
 
     const ownerField = await screen.findByLabelText('Owner User ID');

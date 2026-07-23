@@ -245,7 +245,7 @@ describe('DataTable mobile card list', () => {
     renderWithAuth(<DataTable columns={ACTION_COLUMNS} rows={ROWS} defaultOrderBy="name" />);
 
     await user.click(screen.getByLabelText('Sort by'));
-    await user.click(await screen.findByRole('option', { name: 'Amount · Z→A' }));
+    await user.click(await screen.findByRole('option', { name: 'Amount · descending' }));
 
     const cards = screen.getAllByRole('listitem');
     expect(within(cards[0]).getByText('Alpha')).toBeInTheDocument(); // 1000 first

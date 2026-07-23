@@ -58,7 +58,14 @@ export default function ConfirmDialog({
   }
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" aria-labelledby="confirm-dialog-title">
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="xs"
+      aria-labelledby="confirm-dialog-title"
+      // The consequence sentence is announced on open, not just the title.
+      aria-describedby={message ? 'confirm-dialog-description' : undefined}
+    >
       <DialogTitle id="confirm-dialog-title">{title}</DialogTitle>
       <DialogContent>
         {error && (
@@ -66,7 +73,9 @@ export default function ConfirmDialog({
             {error}
           </Alert>
         )}
-        {message && <DialogContentText>{message}</DialogContentText>}
+        {message && (
+          <DialogContentText id="confirm-dialog-description">{message}</DialogContentText>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={submitting}>

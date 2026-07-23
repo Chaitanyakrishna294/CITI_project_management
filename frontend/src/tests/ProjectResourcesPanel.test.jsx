@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
-import { renderWithAuth, screen } from '../test/test-utils';
+import { renderWithAuth, screen, within } from '../test/test-utils';
 import ProjectResourcesPanel from '../components/ProjectResourcesPanel';
 
 vi.mock('../services/resourcesService');
@@ -23,7 +23,7 @@ describe('ProjectResourcesPanel', () => {
     resourcesService.listAllocations.mockResolvedValue({ allocations: [] });
     renderPanel({ id: 1, role: 'team_member' });
 
-    expect(await screen.findByText('No resources allocated yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No resources allocated yet')).toBeInTheDocument();
   });
 
   it.each(['admin', 'project_manager'])(
@@ -64,7 +64,7 @@ describe('ProjectResourcesPanel', () => {
 
     renderPanel({ id: 1, role: 'admin' });
 
-    await screen.findByText('No resources allocated yet.');
+    await screen.findByText('No resources allocated yet');
     await user.click(screen.getByRole('button', { name: 'Allocate Resource' }));
 
     const resourceSelect = await screen.findByLabelText(/^Resource/);
@@ -84,17 +84,8 @@ describe('ProjectResourcesPanel', () => {
   });
 
   describe('remove confirmation', () => {
-    let confirmSpy;
-    beforeEach(() => {
-      confirmSpy = vi.spyOn(window, 'confirm');
-    });
-    afterEach(() => {
-      confirmSpy.mockRestore();
-    });
-
-    it('does not remove when window.confirm returns false', async () => {
+    it('does not remove when the ConfirmDialog is cancelled', async () => {
       const user = userEvent.setup();
-      confirmSpy.mockReturnValue(false);
       resourcesService.listAllocations.mockResolvedValue({
         allocations: [{ id: 1, resource_name: 'Bob', allocation_pct: 50 }],
       });
@@ -103,13 +94,15 @@ describe('ProjectResourcesPanel', () => {
       await screen.findByText('Bob');
       await user.click(screen.getByRole('button', { name: 'Remove' }));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Remove Bob from this project?')).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
       expect(resourcesService.deleteAllocation).not.toHaveBeenCalled();
     });
 
-    it('removes via deleteAllocation when window.confirm returns true', async () => {
+    it('removes via deleteAllocation after confirming in the ConfirmDialog', async () => {
       const user = userEvent.setup();
-      confirmSpy.mockReturnValue(true);
       resourcesService.listAllocations.mockResolvedValue({
         allocations: [{ id: 1, resource_name: 'Bob', allocation_pct: 50 }],
       });
@@ -119,7 +112,9 @@ describe('ProjectResourcesPanel', () => {
       await screen.findByText('Bob');
       await user.click(screen.getByRole('button', { name: 'Remove' }));
 
-      expect(confirmSpy).toHaveBeenCalled();
+      const dialog = await screen.findByRole('dialog');
+      await user.click(within(dialog).getByRole('button', { name: 'Remove' }));
+
       expect(resourcesService.deleteAllocation).toHaveBeenCalledWith(1);
     });
   });
@@ -134,7 +129,7 @@ describe('ProjectResourcesPanel', () => {
 
     renderPanel({ id: 1, role: 'admin' });
 
-    await screen.findByText('No resources allocated yet.');
+    await screen.findByText('No resources allocated yet');
     await user.click(screen.getByRole('button', { name: 'Allocate Resource' }));
 
     const resourceSelect = await screen.findByLabelText(/^Resource/);

@@ -12,16 +12,15 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 
 import ConfirmDialog from '../components/ConfirmDialog';
 import DataTable from '../components/DataTable';
@@ -29,11 +28,13 @@ import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
+import { useStatusColors } from '../theme';
 import PageHeader from '../components/PageHeader';
+import StatusIndicator from '../components/StatusIndicator';
+import { AddIcon } from '../components/icons';
 import { EmptyWorkIllustration } from '../components/illustrations';
 
 const STATUSES = ['active', 'completed', 'delayed', 'archived'];
-const STATUS_COLOR = { active: 'success', completed: 'default', delayed: 'warning', archived: 'default' };
 
 const emptyForm = { name: '', description: '', department: '', manager_id: '', start_date: '', end_date: '' };
 
@@ -69,6 +70,9 @@ function formatBudget(value) {
 export default function Projects() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  // Mode-aware status palette (glow-up brief v2 §2) — the static STATUS_COLORS
+  // object would go stale when the colour mode flips.
+  const statusColors = useStatusColors();
   const [managers, setManagers] = useState([]);
 
   const [filters, setFilters] = useState({ ...emptyFilters, q: searchParams.get('q') || '' });
@@ -88,9 +92,11 @@ export default function Projects() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // The project the archive confirmation is currently asking about.
   const [archiveTarget, setArchiveTarget] = useState(null);
+  const [toast, setToast] = useState('');
 
   const canCreate = user?.role === 'admin' || user?.role === 'project_manager';
   const filtered = Object.values(filters).some(Boolean);
@@ -159,22 +165,28 @@ export default function Projects() {
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
+    setSaving(true);
     try {
       if (editingId) {
         await projectsService.updateProject(editingId, form);
+        setToast(`${form.name} saved`);
       } else {
         await projectsService.createProject(form);
+        setToast(`${form.name} created`);
       }
       setFormOpen(false);
       reloadProjects();
     } catch (err) {
       setFormError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
   // ConfirmDialog surfaces a rejection inline, so no try/catch here.
   async function handleArchive() {
     await projectsService.archiveProject(archiveTarget.id);
+    setToast(`${archiveTarget.name} archived`);
     reloadProjects();
   }
 
@@ -193,7 +205,9 @@ export default function Projects() {
     {
       id: 'status',
       label: 'Status',
-      render: (p) => <Chip size="small" color={STATUS_COLOR[p.status]} label={p.status} />,
+      // Status meaning is a dot + label (glow-up brief v2 §2); filled Chips
+      // stay reserved for counts/badges.
+      render: (p) => <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={p.status} />,
     },
     {
       id: 'planned_amount',
@@ -302,6 +316,13 @@ export default function Projects() {
             ? `${projects.length} projects · ${projects.filter((p) => p.status === 'active').length} active · ${projects.filter((p) => p.status === 'delayed').length} delayed`
             : undefined
         }
+        action={
+          canCreate && (
+            <Button variant="contained" startIcon={<AddIcon size={18} />} onClick={openCreate}>
+              New Project
+            </Button>
+          )
+        }
       />
 
       {showSkeleton && <LoadingState variant="table" label="Loading projects…" />}
@@ -330,13 +351,6 @@ export default function Projects() {
           exportFilename="projects.csv"
           emptyMessage="No projects match these filters."
           toolbar={toolbar}
-          actions={
-            canCreate ? (
-              <Button variant="contained" onClick={openCreate}>
-                New Project
-              </Button>
-            ) : null
-          }
         />
       )}
 
@@ -404,10 +418,20 @@ export default function Projects() {
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">{editingId ? 'Save' : 'Create'}</Button>
+            <Button type="submit" variant="contained" disabled={saving}>
+              {saving ? 'Saving…' : editingId ? 'Save' : 'Create'}
+            </Button>
           </DialogActions>
         </Box>
       </Dialog>
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={4000}
+        onClose={() => setToast('')}
+        message={toast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

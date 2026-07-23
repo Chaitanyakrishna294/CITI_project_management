@@ -101,10 +101,12 @@ export default function TeamDetails() {
     if (memberToAdd === '') return;
     setMemberError('');
     setAddingMember(true);
+    // Success toasts name the object (UI/UX form conventions), same as removal.
+    const person = individuals.find((p) => p.id === memberToAdd);
     try {
       await teamsService.addTeamMember(team.id, memberToAdd);
       setMemberToAdd('');
-      setToast('Member added');
+      setToast(`${person.name} added to ${team.name}`);
       reload();
     } catch (err) {
       setMemberError(err.message);
@@ -295,7 +297,7 @@ export default function TeamDetails() {
 
             {team.achievements.length === 0 ? (
               <EmptyState
-          icon={<EmptyDataIllustration />}
+                icon={<EmptyDataIllustration />}
                 title="Nothing recorded yet"
                 message="Capture what this team shipped, fixed, or improved each month."
                 actionLabel={canManage ? 'Record achievement' : undefined}

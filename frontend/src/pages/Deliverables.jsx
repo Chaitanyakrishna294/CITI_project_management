@@ -9,7 +9,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Link from '@mui/material/Link';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
@@ -185,7 +184,9 @@ export default function Deliverables() {
           >
             {d.due_date || '—'}
           </Typography>
-          {isOverdue(d) && <Chip color="error" label="Overdue" />}
+          {/* Overdue is status meaning, not a count — dot + label per glow-up
+              brief v2 §2; error.main resolves per mode. */}
+          {isOverdue(d) && <StatusIndicator color="error.main" label="Overdue" />}
         </Stack>
       ),
     },

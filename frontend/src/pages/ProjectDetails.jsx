@@ -1,11 +1,14 @@
+/**
+ * UI-04 Project Details: identity header plus Deliverables / Resources /
+ * Budget tabs (req/Application_Flow.md §10). The three §15 data states are
+ * handled here for the project record itself; each tab panel owns its own.
+ */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Chip from '@mui/material/Chip';
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 
 import * as projectsService from '../services/projectsService';
@@ -13,39 +16,82 @@ import { useAuth } from '../contexts/AuthContext';
 import DeliverablesPanel from '../components/DeliverablesPanel';
 import ProjectResourcesPanel from '../components/ProjectResourcesPanel';
 import BudgetPanel from '../components/BudgetPanel';
-import { DISPLAY_FONT } from '../theme';
-
-const STATUS_COLOR = { active: 'success', completed: 'default', delayed: 'warning', archived: 'default' };
+import StatusIndicator from '../components/StatusIndicator';
+import { ErrorState, LoadingState } from '../components/PageState';
+import { BackIcon } from '../components/icons';
+import { DISPLAY_FONT, useStatusColors } from '../theme';
 
 export default function ProjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [project, setProject] = useState(null);
-  const [error, setError] = useState('');
+  // Mode-aware status palette (glow-up brief v2 §2) — the static STATUS_COLORS
+  // object would go stale when the colour mode flips.
+  const statusColors = useStatusColors();
+
+  // Bumping the token re-runs the fetch effect on retry.
+  const [reloadToken, setReloadToken] = useState(0);
+  // The result carries the request it answers, so "loading" is derived rather
+  // than toggled — no state has to be written before the request is issued
+  // (pattern in pages/Projects.jsx).
+  const [result, setResult] = useState({ key: null, project: null, error: '' });
+  const requestKey = `${id}:${reloadToken}`;
+  const loading = result.key !== requestKey;
+  const project = loading ? null : result.project;
+  const error = loading ? '' : result.error;
+
   const [tab, setTab] = useState('deliverables');
 
+  function reload() {
+    setReloadToken((token) => token + 1);
+  }
+
   useEffect(() => {
+    let active = true;
     projectsService
       .getProject(id)
-      .then((data) => setProject(data.project))
-      .catch((err) => setError(err.message));
-  }, [id]);
+      .then((data) => {
+        // The guard stops a slow response overwriting a newer one.
+        if (active) setResult({ key: requestKey, project: data.project, error: '' });
+      })
+      .catch((err) => {
+        if (active) setResult({ key: requestKey, project: null, error: err.message });
+      });
+    return () => {
+      active = false;
+    };
+  }, [id, requestKey]);
 
   const canManage = project && (user?.role === 'admin' || user?.id === project.manager_id);
 
-  if (error) return <Alert severity="error">{error}</Alert>;
+  if (loading) return <LoadingState variant="text" label="Loading project…" />;
+  if (error) return <ErrorState title="Could not load project" error={error} onRetry={reload} />;
   if (!project) return null;
 
   return (
     <Box>
-      <Button size="small" onClick={() => navigate('/projects')} sx={{ mb: 1 }}>
-        ← Back to Projects
+      <Button
+        size="small"
+        startIcon={<BackIcon size={18} />}
+        onClick={() => navigate('/projects')}
+        sx={{ mb: 1 }}
+      >
+        Back to Projects
       </Button>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        <Typography variant="h4" component="h1" sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>{project.name}</Typography>
-        <Chip color={STATUS_COLOR[project.status]} label={project.status} />
+        {/* Detail titles carry the same display serif as list screens (glow-up
+            brief v2 §2) — body, data and buttons stay Inter. */}
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}
+        >
+          {project.name}
+        </Typography>
+        {/* Status meaning is a dot + label (glow-up brief v2 §2); filled Chips
+            stay reserved for counts/badges. */}
+        <StatusIndicator color={statusColors[project.status] || 'grey.500'} label={project.status} />
       </Box>
       <Typography variant="body2" color="text.secondary" gutterBottom>
         Manager: {project.manager_name} {project.department ? `· ${project.department}` : ''}

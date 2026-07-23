@@ -9,6 +9,10 @@
  */
 
 :root {
+  /* Native UI (scrollbars, selects, date pickers, autofill) follows the
+     active mode instead of staying light inside dark. */
+  color-scheme: light;
+
   --color-primary: #194391;
   --color-primary-light: #4169e1;
   --color-primary-dark: #122f66;
@@ -37,6 +41,7 @@
   --color-sidebar-active-bg: #f8f5ef; /* warm off-white, not a blue wash */
   --color-sidebar-active-text: #122f66;
   --color-sidebar-rule: rgba(255, 255, 255, 0.14);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.06);
 
   --font-ui: 'Inter Variable', Inter, 'Segoe UI', Roboto, sans-serif;
   /* Display face for page-level headings ONLY — never body, never buttons. */
@@ -47,6 +52,8 @@
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
+
   /* Lightened for AA on the dark canvas — not the raw light-mode values. */
   --color-primary: #6d93e0;
   --color-primary-light: #8fabf0;
@@ -72,6 +79,7 @@
   --color-sidebar-active-bg: #ece7dc;
   --color-sidebar-active-text: #122f66;
   --color-sidebar-rule: rgba(255, 255, 255, 0.1);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.05);
 }
 
 html {

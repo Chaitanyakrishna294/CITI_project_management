@@ -40,6 +40,7 @@ export default function MetadataEditor({ pairs, onChange, label = 'Metadata' }) 
             />
             <IconButton
               aria-label={`Remove ${row.key || 'metadata'} row`}
+              color="error"
               onClick={() => onChange(pairs.filter((_, i) => i !== index))}
             >
               <DeleteIcon size={18} />

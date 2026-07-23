@@ -10,7 +10,6 @@ import { Link as RouterLink } from 'react-router-dom';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -18,12 +17,13 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Grid from '@mui/material/Grid';
 import LinearProgress from '@mui/material/LinearProgress';
 import Link from '@mui/material/Link';
-import Paper from '@mui/material/Paper';
+import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import DataTable from '../components/DataTable';
+import KpiCard from '../components/KpiCard';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as budgetsService from '../services/budgetsService';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,17 +53,6 @@ function isOverBudget(budget) {
   return Number(budget.actual_spend) > Number(budget.planned_amount);
 }
 
-function KpiCard({ label, value }) {
-  return (
-    <Paper sx={{ p: 2, height: '100%' }}>
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        {label}
-      </Typography>
-      <Typography variant="h5">{value}</Typography>
-    </Paper>
-  );
-}
-
 export default function Budgets() {
   const { user } = useAuth();
   const statusColors = useStatusColors();
@@ -79,6 +68,8 @@ export default function Budgets() {
   const [plannedAmount, setPlannedAmount] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
+  // Success confirmation names the object (req UI_UX §12); 4s auto-hide.
+  const [toast, setToast] = useState('');
 
   // Bumping the token re-runs the fetch effect; the effect itself never sets
   // state synchronously, so a reload cannot cascade renders.
@@ -164,6 +155,7 @@ export default function Budgets() {
     setSaving(true);
     try {
       await budgetsService.updateBudget(target.project_id, { planned_amount: amount });
+      setToast(`${target.project_name} budget updated`);
       closeDialog();
       refresh();
     } catch (err) {
@@ -184,6 +176,7 @@ export default function Budgets() {
     setSaving(true);
     try {
       await budgetsService.recordExpense(target.project_id, amount, expenseDescription);
+      setToast(`Expense recorded for ${target.project_name}`);
       closeDialog();
       refresh();
     } catch (err) {
@@ -293,7 +286,7 @@ export default function Budgets() {
         title="Budget Management"
         summary={
           !loading && !error
-            ? `${budgets.length} budgets · ${budgets.filter((b) => Number(b.actual_spend) > Number(b.planned_amount)).length} over plan`
+            ? `${budgets.length} budgets · ${totals.over} over plan`
             : undefined
         }
       />
@@ -322,10 +315,21 @@ export default function Budgets() {
               <KpiCard label="Total Actual Spend" value={formatCurrency(totals.actual, totalsCurrency)} />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <KpiCard label="Total Remaining" value={formatCurrency(totals.remaining, totalsCurrency)} />
+              {/* Overrun is an error signal, matching the row-level Remaining
+                  column; the ochre accent stays reserved for the dashboard's
+                  attention tier (glow-up brief v2 §2). */}
+              <KpiCard
+                label="Total Remaining"
+                value={formatCurrency(totals.remaining, totalsCurrency)}
+                valueColor={totals.remaining < 0 ? 'error.main' : undefined}
+              />
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
-              <KpiCard label="Over Budget" value={String(totals.over)} />
+              <KpiCard
+                label="Over Budget"
+                value={totals.over}
+                valueColor={totals.over > 0 ? 'error.main' : undefined}
+              />
             </Grid>
           </Grid>
 
@@ -361,7 +365,7 @@ export default function Budgets() {
           <DialogActions>
             <Button onClick={closeDialog}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving}>
-              Save
+              {saving ? 'Saving…' : 'Save'}
             </Button>
           </DialogActions>
         </Box>
@@ -394,11 +398,19 @@ export default function Budgets() {
           <DialogActions>
             <Button onClick={closeDialog}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving}>
-              Save
+              {saving ? 'Saving…' : 'Save'}
             </Button>
           </DialogActions>
         </Box>
       </Dialog>
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={4000}
+        onClose={() => setToast('')}
+        message={toast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

@@ -12,7 +12,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Chip from '@mui/material/Chip';
 import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -22,9 +21,10 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import DataTable from '../components/DataTable';
-import PageState from '../components/PageState';
-import { useStatusColors, DISPLAY_FONT } from '../theme';
-import { useAuth } from '../contexts/AuthContext';
+import PageHeader from '../components/PageHeader';
+import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
+import { EmptyDataIllustration } from '../components/illustrations';
+import { useStatusColors } from '../theme';
 import * as projectsService from '../services/projectsService';
 import * as budgetsService from '../services/budgetsService';
 import * as resourcesService from '../services/resourcesService';
@@ -68,7 +68,10 @@ function FlagCell({ active, label }) {
       </Typography>
     );
   }
-  return <Chip size="small" color="error" label={label} />;
+  // Flags are state, so they render as the v2 dot+label (glow-up brief v2 §2 —
+  // filled pills stay reserved for counts); error.main is mode-aware and
+  // matches how Resources.jsx marks the same over-allocation condition.
+  return <StatusIndicator color="error.main" label={label} />;
 }
 
 const PROJECT_COLUMNS = [
@@ -239,7 +242,6 @@ const REPORTS = [
 ];
 
 export default function Reports() {
-  const { user } = useAuth();
   const [tab, setTab] = useState(0);
   const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', department: '' });
   const [reloadToken, setReloadToken] = useState(0);
@@ -360,19 +362,16 @@ export default function Reports() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
-        Reports
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        Project, budget, resource and deliverable reports. Every table can be sorted, paged and exported to CSV.
-      </Typography>
-      {user && (
-        <Typography variant="caption" color="text.secondary">
-          Showing the data visible to {user.name} ({user.role}).
-        </Typography>
-      )}
+      <PageHeader
+        title="Reports"
+        summary={
+          !loading && !error
+            ? `${projectRows.length} projects · ${budgetRows.length} budgets · ${resourceRows.length} resources · ${deliverableRows.length} deliverables`
+            : undefined
+        }
+      />
 
-      <Paper sx={{ p: 2, mt: 2 }}>
+      <Paper sx={{ p: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <TextField
             label="From"
@@ -412,14 +411,23 @@ export default function Reports() {
       </Tabs>
 
       <Box role="tabpanel" id={`report-panel-${report.key}`} aria-labelledby={`report-tab-${report.key}`}>
-        <PageState
-          loading={loading}
-          error={error}
-          empty={rows.length === 0}
-          onRetry={() => setReloadToken((n) => n + 1)}
-          emptyTitle={report.emptyTitle}
-          emptyMessage={report.emptyMessage}
-        >
+        {loading && <LoadingState label="Loading reports…" />}
+
+        {!loading && error && (
+          <ErrorState error={error} onRetry={() => setReloadToken((n) => n + 1)} />
+        )}
+
+        {/* Reports are read-only views, so the §15 call to action stays with
+            the global filters above rather than a button here. */}
+        {!loading && !error && rows.length === 0 && (
+          <EmptyState
+            icon={<EmptyDataIllustration />}
+            title={report.emptyTitle}
+            message={report.emptyMessage}
+          />
+        )}
+
+        {!loading && !error && rows.length > 0 && (
           <DataTable
             key={report.key}
             title={report.title}
@@ -431,7 +439,7 @@ export default function Reports() {
             emptyMessage={report.emptyMessage}
             dense
           />
-        </PageState>
+        )}
       </Box>
     </Box>
   );

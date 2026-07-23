@@ -9,22 +9,24 @@ import { useEffect, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import LinearProgress from '@mui/material/LinearProgress';
 import MenuItem from '@mui/material/MenuItem';
+import Snackbar from '@mui/material/Snackbar';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import DataTable from '../components/DataTable';
+import StatusIndicator from '../components/StatusIndicator';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as resourcesService from '../services/resourcesService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
 import PageHeader from '../components/PageHeader';
+import { AddPersonIcon } from '../components/icons';
 import { EmptyWorkIllustration } from '../components/illustrations';
 
 const emptyForm = { user_id: '', title: '', department: '', weekly_capacity: 100 };
@@ -51,6 +53,8 @@ export default function Resources() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
 
   // Bumping the token re-runs the fetch effect after a create/edit.
   const [reloadToken, setReloadToken] = useState(0);
@@ -121,18 +125,28 @@ export default function Resources() {
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
+    setSaving(true);
     try {
       if (editingId) {
         await resourcesService.updateResource(editingId, {
           title: form.title, department: form.department, weekly_capacity: form.weekly_capacity,
         });
+        // The confirmation names the person (§13): the edited row is still in
+        // the list, so the name comes from there rather than extra state.
+        const name = resources.find((r) => r.id === editingId)?.user_name;
+        setToast(`${name || 'Resource'} updated`);
       } else {
         await resourcesService.createResource(form);
+        // Only an Admin has the user list to name from; a PM entered a raw id.
+        const name = users.find((u) => u.id === Number(form.user_id))?.name;
+        setToast(`${name || 'Resource'} added`);
       }
       setFormOpen(false);
       load();
     } catch (err) {
       setFormError(err.message);
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -169,8 +183,11 @@ export default function Resources() {
       sortValue: (r) => (allocationOf(r) > capacityOf(r) ? 1 : 0),
       exportValue: (r) => (allocationOf(r) > capacityOf(r) ? 'Yes' : 'No'),
       render: (r) =>
+        // Over-allocation is state, so it renders as the v2 dot+label (glow-up
+        // brief v2 §2 — filled pills stay reserved for counts). error.main is
+        // mode-aware and matches the hue the utilization bar already flips to.
         allocationOf(r) > capacityOf(r) ? (
-          <Chip size="small" color="error" label="Over-allocated" />
+          <StatusIndicator color="error.main" label="Over-allocated" />
         ) : (
           <Typography variant="body2" color="text.secondary">—</Typography>
         ),
@@ -214,8 +231,15 @@ export default function Resources() {
         title="Resources"
         summary={
           !loading && !error
-            ? `${resources.length} people · ${resources.filter((r) => Number(r.total_allocation_pct) > Number(r.weekly_capacity)).length} over-allocated`
+            ? `${resources.length} people · ${resources.filter((r) => allocationOf(r) > capacityOf(r)).length} over-allocated`
             : undefined
+        }
+        action={
+          canManage && (
+            <Button variant="contained" startIcon={<AddPersonIcon size={18} />} onClick={openCreate}>
+              Add Resource
+            </Button>
+          )
         }
       />
 
@@ -245,17 +269,10 @@ export default function Resources() {
           exportFilename="resources.csv"
           emptyMessage="No resources match these filters."
           toolbar={toolbar}
-          actions={
-            canManage ? (
-              <Button variant="contained" onClick={openCreate}>
-                Add Resource
-              </Button>
-            ) : null
-          }
         />
       )}
 
-      <Dialog open={formOpen} onClose={() => setFormOpen(false)} fullWidth maxWidth="xs">
+      <Dialog open={formOpen} onClose={() => !saving && setFormOpen(false)} fullWidth maxWidth="xs">
         <Box component="form" onSubmit={handleSubmit}>
           <DialogTitle>{editingId ? 'Edit Resource' : 'Add Resource'}</DialogTitle>
           <DialogContent>
@@ -297,11 +314,21 @@ export default function Resources() {
             />
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained">{editingId ? 'Save' : 'Create'}</Button>
+            <Button onClick={() => setFormOpen(false)} disabled={saving}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={saving}>
+              {saving ? 'Saving…' : editingId ? 'Save' : 'Create'}
+            </Button>
           </DialogActions>
         </Box>
       </Dialog>
+
+      <Snackbar
+        open={!!toast}
+        autoHideDuration={4000}
+        onClose={() => setToast('')}
+        message={toast}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

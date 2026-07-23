@@ -165,7 +165,7 @@ export default function AppLayout() {
                   mb: 0.5,
                   color: 'var(--color-sidebar-text)',
                   '& .MuiListItemIcon-root': { color: 'inherit', opacity: 0.75 },
-                  '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.06)' },
+                  '&:hover': { bgcolor: 'var(--color-sidebar-hover)' },
                   // The navy focus ring vanishes on navy — use the cream.
                   '&:focus-visible': {
                     outline: '2px solid var(--color-sidebar-active-bg)',
@@ -194,6 +194,29 @@ export default function AppLayout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* WCAG 2.4.1 bypass block: first focusable element jumps past the bar
+          and sidebar. Visually hidden until keyboard focus lands on it. */}
+      <Box
+        component="a"
+        href="#main-content"
+        sx={{
+          position: 'fixed',
+          top: 8,
+          left: 8,
+          zIndex: (t) => t.zIndex.tooltip + 1,
+          bgcolor: 'background.paper',
+          color: 'primary.main',
+          px: 2,
+          py: 1,
+          borderRadius: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          transform: 'translateY(-200%)',
+          '&:focus-visible': { transform: 'none' },
+        }}
+      >
+        Skip to main content
+      </Box>
       {/* Harbor Blue chrome: white bar with a hairline border instead of a
           filled primary bar — the navy is reserved for the brand and actions. */}
       <AppBar
@@ -293,7 +316,9 @@ export default function AppLayout() {
         </Toolbar>
       </AppBar>
 
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
+      {/* Plain Box: the labelled <nav> landmark lives inside the drawer —
+          a second, unnamed nav wrapper would announce twice. */}
+      <Box sx={{ width: { md: DRAWER_WIDTH }, flexShrink: { md: 0 } }}>
         {isDesktop ? (
           <Drawer
             variant="permanent"
@@ -324,6 +349,7 @@ export default function AppLayout() {
 
       <Box
         component="main"
+        id="main-content"
         sx={{
           flexGrow: 1,
           // minWidth:0 lets wide tables scroll inside the main column instead of

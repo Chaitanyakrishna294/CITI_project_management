@@ -68,7 +68,7 @@ Font: **Inter Variable**, self-hosted via `@fontsource-variable/inter` (no third
 | subtitle2 | 14 px / 600 | KPI card labels, field-group labels |
 | body1 | 16 px / 400 | Primary body text |
 | body2 | 14 px / 400 | Table cells, secondary text, nav items |
-| button | 14 px / 600 | No uppercase transform (`textTransform: none`) |
+| button | 14 px / 600 | No uppercase transform (`textTransform: none`). Text-variant buttons step to **500**: row actions (Edit / Archive / Delete) repeat once per table row, and at 600 a column of them competes with the data. Filled/outlined CTAs keep 600. |
 | caption | 12 px / 400 | Hints, footnotes, metadata |
 
 ### 2.3 Iconography
@@ -83,6 +83,7 @@ Empty states use three purpose-built line illustrations in the same stroke langu
 - **Radius:** 8 px on everything (`shape.borderRadius`).
 - **Elevation:** flat. Cards/tables are white surfaces with hairline `divider` borders; buttons ship `disableElevation`. Dialogs are the only surfaces with shadow.
 - **Table headers:** transparent, 600 weight, closed by a **2px primary underline** (no gray wash); numeric columns use `font-variant-numeric: tabular-nums`; row hover is a 3px left-edge primary bar, not a row tint.
+- **Table density:** cells pad 10 px vertical / 16 px horizontal (down from MUI's 16/16) — data screens read as a ledger, not a form. Row height stays ≥40 px with body2, holding the 8 px rhythm and touch targets.
 - **Focus:** every interactive element shows a 2 px outline with 2 px offset on `:focus-visible`, riding `--color-focus-ring` per mode; the navy sidebar uses the cream active tone for its focus ring so it stays visible on navy.
 
 ---

@@ -227,6 +227,13 @@ export function buildTheme(mode = 'light') {
     },
     MuiButton: {
       defaultProps: { disableElevation: true },
+      styleOverrides: {
+        // Row-action text buttons (Edit / Archive / Delete) appear once per
+        // table row; at the full 600 button weight a column of them competes
+        // with the data. Text variant steps to 500 — filled/outlined CTAs
+        // keep the documented 600.
+        text: { fontWeight: 500 },
+      },
     },
     // Links and buttons must not compete at the same visual weight (glow-up
     // brief §4.7): links are plain primary text that underline on hover, while
@@ -244,6 +251,10 @@ export function buildTheme(mode = 'light') {
     },
     MuiTableCell: {
       styleOverrides: {
+        // 10px vertical padding instead of MUI's 16px: data screens read as
+        // a ledger, not a form. Still ≥40px row height with body2, so touch
+        // targets and the 8px rhythm hold.
+        root: { padding: '10px 16px' },
         // Custom table shape (glow-up brief v2 §2): no header wash — a single
         // 2px primary underline below the header row carries the structure.
         // (Primary, not the ochre accent: the accent stays reserved for
