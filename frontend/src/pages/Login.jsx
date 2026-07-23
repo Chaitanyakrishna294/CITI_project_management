@@ -62,14 +62,14 @@ export default function Login() {
           aria-hidden
           sx={{
             position: 'absolute',
-            right: -72,
-            bottom: -120,
+            right: -110,
+            bottom: -170,
             fontFamily: DISPLAY_FONT,
             fontWeight: 600,
-            fontSize: 420,
+            fontSize: 580,
             lineHeight: 1,
             color: 'var(--color-sidebar-active-bg)',
-            opacity: 0.07,
+            opacity: 0.11,
             pointerEvents: 'none',
             userSelect: 'none',
           }}

@@ -150,6 +150,30 @@ export default function AppLayout() {
           Project Management
         </Typography>
       </Box>
+      {/* The cropped X again — the login panel's mark echoed as a whisper at
+          the foot of the rail. The inset-0 wrapper clips the overhang so the
+          glyph can't add scroll; nav items (positioned) paint over it. */}
+      <Box
+        aria-hidden
+        sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}
+      >
+        <Box
+          sx={{
+            position: 'absolute',
+            left: -48,
+            bottom: -70,
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 600,
+            fontSize: 220,
+            lineHeight: 1,
+            color: 'var(--color-sidebar-active-bg)',
+            opacity: 0.05,
+            userSelect: 'none',
+          }}
+        >
+          X
+        </Box>
+      </Box>
       {/* Solid ink sidebar: the app's silhouette
           comes from this surface, not from a tinted white list. Colours ride
           the --color-sidebar-* custom properties so dark mode retunes them
