@@ -17,6 +17,7 @@ import {
   ClipboardList,
   Contact,
   Download,
+  Upload,
   Eye,
   EyeOff,
   Folder,
@@ -74,6 +75,7 @@ export const AddPersonIcon = standardize(UserPlus, 'AddPersonIcon');
 export const RemovePersonIcon = standardize(UserMinus, 'RemovePersonIcon');
 export const DeleteIcon = standardize(Trash2, 'DeleteIcon');
 export const DownloadIcon = standardize(Download, 'DownloadIcon');
+export const UploadIcon = standardize(Upload, 'UploadIcon');
 export const BackIcon = standardize(ArrowLeft, 'BackIcon');
 export const ShowPasswordIcon = standardize(Eye, 'ShowPasswordIcon');
 export const HidePasswordIcon = standardize(EyeOff, 'HidePasswordIcon');

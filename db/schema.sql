@@ -25,6 +25,7 @@ CREATE TABLE projects (
     department          VARCHAR(255),
     start_date          DATE,
     end_date            DATE,
+    metadata            JSONB NOT NULL DEFAULT '{}',
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
