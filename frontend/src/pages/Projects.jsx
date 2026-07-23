@@ -32,6 +32,7 @@ import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
 import { useStatusColors, statusLabel } from '../theme';
 import PageHeader from '../components/PageHeader';
+import NewIndicator from '../components/NewIndicator';
 import StatusIndicator from '../components/StatusIndicator';
 import { AddIcon, UploadIcon } from '../components/icons';
 import { EmptyWorkIllustration } from '../components/illustrations';
@@ -251,9 +252,12 @@ export default function Projects() {
       id: 'name',
       label: 'Name',
       render: (p) => (
-        <Link component={RouterLink} to={`/projects/${p.id}`}>
-          {p.name}
-        </Link>
+        <>
+          <Link component={RouterLink} to={`/projects/${p.id}`}>
+            {p.name}
+          </Link>
+          <NewIndicator createdAt={p.created_at} />
+        </>
       ),
     },
     { id: 'manager_name', label: 'Manager' },

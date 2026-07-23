@@ -67,6 +67,20 @@ beforeEach(() => {
 });
 
 describe('Projects page', () => {
+  it('marks rows created in the last 24 hours with the New beacon', async () => {
+    mockList([
+      { ...project1, created_at: new Date().toISOString() },
+      { ...project2, created_at: '2025-01-01 09:00:00+05:30' },
+    ]);
+    renderWithAuth(<Projects />, { user: viewerUser });
+    await screen.findByText('Website Revamp');
+
+    const freshRow = screen.getByText('Website Revamp').closest('tr');
+    const oldRow = screen.getByText('Data Migration').closest('tr');
+    expect(within(freshRow).getByText('New')).toBeInTheDocument();
+    expect(within(oldRow).queryByText('New')).not.toBeInTheDocument();
+  });
+
   it('shows the empty state when the list is empty', async () => {
     mockList([]);
     renderWithAuth(<Projects />, { user: viewerUser });
