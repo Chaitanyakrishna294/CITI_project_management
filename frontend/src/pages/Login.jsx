@@ -106,6 +106,7 @@ export default function Login() {
         }}
       >
         <BrandMark
+          outlined
           size={560}
           opacity={0.9}
           color="background.paper"

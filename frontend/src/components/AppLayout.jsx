@@ -248,6 +248,7 @@ export default function AppLayout() {
           where paper sits one step lighter than the ink canvas. */}
       <BrandMark
         fixed
+        outlined
         size={560}
         opacity={0.9}
         color="background.paper"

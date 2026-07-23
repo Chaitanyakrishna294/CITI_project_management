@@ -21,6 +21,9 @@ export default function BrandMark({
   opacity = 0.05,
   color = 'var(--color-sidebar-active-bg)',
   fixed = false,
+  // Emboss mode: a hairline divider-toned edge around the glyph so a
+  // paper-white mark stays perceptible against the near-white canvas.
+  outlined = false,
   glyphSx = { right: -size * 0.2, bottom: -size * 0.3 },
 }) {
   return (
@@ -44,6 +47,7 @@ export default function BrandMark({
           color,
           opacity,
           userSelect: 'none',
+          ...(outlined && { WebkitTextStroke: '1px var(--color-divider)' }),
           ...glyphSx,
         }}
       >
