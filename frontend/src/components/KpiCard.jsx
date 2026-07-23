@@ -15,14 +15,22 @@ export default function KpiCard({ label, value, caption, captionColor = 'text.se
   const shown = useCountUp(value);
   return (
     <Paper sx={{ p: 2, height: '100%', borderTop: '2px solid', borderTopColor: 'divider' }}>
-      <Typography variant="subtitle2" color="text.secondary">
+      {/* Overline label + large tabular figure: the same ledger-caps voice
+          as table headers, so KPI rows and tables read as one system. */}
+      {/* Block-level span, not a div: screens locate the enclosing card via
+          label.closest('div'), which must resolve to the Paper. */}
+      <Typography
+        variant="overline"
+        color="text.secondary"
+        sx={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', lineHeight: 2 }}
+      >
         {label}
       </Typography>
       <Typography
         variant="h4"
         component="p"
         color={valueColor}
-        sx={{ fontVariantNumeric: 'tabular-nums' }}
+        sx={{ fontVariantNumeric: 'tabular-nums', fontSize: 30, lineHeight: 1.2 }}
       >
         {shown}
       </Typography>

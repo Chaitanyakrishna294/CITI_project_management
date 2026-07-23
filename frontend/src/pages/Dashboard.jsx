@@ -31,6 +31,7 @@ import LineChart from '../components/charts/LineChart';
 import { useChartColors, useStatusColors, DISPLAY_FONT } from '../theme';
 import StatusIndicator from '../components/StatusIndicator';
 import KpiCard from '../components/KpiCard';
+import PageHeader from '../components/PageHeader';
 
 const DELIVERABLE_STATUSES = [
   { key: 'not_started', label: 'Not started' },
@@ -194,9 +195,7 @@ export default function Dashboard() {
   if (!summary) {
     return (
       <Box>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
-          Dashboard
-        </Typography>
+        <PageHeader title="Dashboard" />
         <Stack spacing={2}>
           <LoadingState variant="cards" rows={4} label="Loading dashboard" />
           <LoadingState variant="table" rows={4} />
@@ -209,12 +208,7 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
-        Dashboard
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        Welcome back, {user?.name} ({user?.role})
-      </Typography>
+      <PageHeader title="Dashboard" summary={`Welcome back, ${user?.name} (${user?.role})`} />
 
       {/* Attention tier (glow-up brief §4.4): what needs acting on today sits
           above the steady-state KPIs, not mixed in among them. */}

@@ -39,28 +39,76 @@ export default function Login() {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'background.default',
-      }}
-    >
-      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider' }}>
-        {/* Product name carries the same display-serif identity as in-app page
-            titles (glow-up brief v2 §2) — pre-auth is not exempt. */}
+    <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: 'background.default' }}>
+      {/* Brand panel: the same navy column the app shell uses, so the first
+          screen and every screen after it share one silhouette. Hidden on
+          small screens, where the card carries the product name instead. */}
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          width: '40%',
+          maxWidth: 480,
+          bgcolor: 'var(--color-sidebar-bg)',
+          p: 6,
+        }}
+      >
+        <Box>
+          <Typography
+            component="div"
+            sx={{
+              fontFamily: DISPLAY_FONT,
+              fontWeight: 600,
+              fontSize: 56,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              color: 'var(--color-sidebar-active-bg)',
+            }}
+          >
+            CITI
+          </Typography>
+          <Typography
+            component="div"
+            variant="caption"
+            sx={{
+              mt: 1,
+              color: 'var(--color-sidebar-text)',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Project Management
+          </Typography>
+        </Box>
+        <Typography variant="body2" sx={{ color: 'var(--color-sidebar-text)', maxWidth: 300 }}>
+          Projects, deliverables, resources and budgets — one ledger for the whole portfolio.
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2,
+        }}
+      >
+      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider', borderRadius :5,borderBottom: '2px solid', borderBottomColor: 'primary.main' }}>
+        {/* The sign-in heading keeps the display-serif identity (glow-up brief
+            v2 §2); the product name below also serves small screens, where
+            the brand panel is hidden. */}
         <Typography
           variant="h5"
           component="h1"
           gutterBottom
           sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}
         >
-          CITI Project Management
+          Sign in
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          Sign in to continue
+          CITI Project Management
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
@@ -123,6 +171,7 @@ export default function Login() {
           </Typography>
         </Box>
       </Paper>
+      </Box>
     </Box>
   );
 }

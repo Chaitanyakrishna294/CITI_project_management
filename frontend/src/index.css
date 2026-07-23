@@ -49,6 +49,8 @@
 
   --space-unit: 8px;
   --radius: 8px;
+
+  --color-scrollbar: #cbd5e1; /* slate-300 thumb on the light canvas */
 }
 
 [data-theme='dark'] {
@@ -80,11 +82,24 @@
   --color-sidebar-active-text: #122f66;
   --color-sidebar-rule: rgba(255, 255, 255, 0.1);
   --color-sidebar-hover: rgba(255, 255, 255, 0.05);
+
+  --color-scrollbar: #334155; /* slate-700 thumb on the dark canvas */
 }
 
 html {
   /* Anchor links and programmatic scrolls ease instead of jumping. */
   scroll-behavior: smooth;
+
+  /* Slim, token-coloured scrollbars in place of the chunky defaults. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+/* Text selection carries the brand: navy plate in light, sky plate in dark
+   (the vars flip both halves, keeping AA either way). */
+::selection {
+  background: var(--color-primary);
+  color: var(--color-bg-paper);
 }
 
 html,

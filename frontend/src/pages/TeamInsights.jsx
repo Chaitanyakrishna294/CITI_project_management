@@ -21,7 +21,7 @@ import DataTable from '../components/DataTable';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as teamsService from '../services/teamsService';
 import { EmptyDataIllustration } from '../components/illustrations';
-import { DISPLAY_FONT } from '../theme';
+import PageHeader from '../components/PageHeader';
 import StatusIndicator from '../components/StatusIndicator';
 import KpiCard from '../components/KpiCard';
 
@@ -134,12 +134,10 @@ export default function TeamInsights() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
-        Team Insights
-      </Typography>
-      <Typography variant="body1" color="text.secondary" gutterBottom>
-        Team structure at a glance: co-location, staffing mix, and reporting lines across all teams.
-      </Typography>
+      <PageHeader
+        title="Team Insights"
+        summary="Team structure at a glance: co-location, staffing mix, and reporting lines across all teams."
+      />
 
       {loading && <LoadingState variant="cards" label="Loading team insights…" />}
 
