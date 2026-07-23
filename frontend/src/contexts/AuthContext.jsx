@@ -3,7 +3,7 @@ import * as authService from '../services/authService';
 
 export const AuthContext = createContext(null);
 
-const TOKEN_KEY = 'acme_token';
+const TOKEN_KEY = 'citi_token';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

@@ -35,14 +35,25 @@ from postgres_service import (
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-PG_CONFIG = (
-    f"host={os.getenv('POSTGRES_HOST', 'localhost')} "
-    f"port={os.getenv('POSTGRES_PORT', '5432')} "
-    f"user={os.getenv('POSTGRES_USER', 'test')} "
-    f"password={os.getenv('POSTGRES_PASS', 'test')} "
-    f"dbname={os.getenv('POSTGRES_NAME', 'test')} "
-    f"connect_timeout=15"
-)
+def _pg_config():
+    """Connection string from the environment; no built-in fallback credentials."""
+    required = ("POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_USER", "POSTGRES_PASS", "POSTGRES_NAME")
+    missing = [name for name in required if not os.getenv(name)]
+    if missing:
+        raise RuntimeError(
+            f"Missing required environment variables: {', '.join(missing)}"
+        )
+    return (
+        f"host={os.environ['POSTGRES_HOST']} "
+        f"port={os.environ['POSTGRES_PORT']} "
+        f"user={os.environ['POSTGRES_USER']} "
+        f"password={os.environ['POSTGRES_PASS']} "
+        f"dbname={os.environ['POSTGRES_NAME']} "
+        f"connect_timeout=15"
+    )
+
+
+PG_CONFIG = _pg_config()
 
 MANAGER_ROLES = {"admin", "project_manager"}
 

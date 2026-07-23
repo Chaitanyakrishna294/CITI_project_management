@@ -119,11 +119,8 @@ fi
 cd "$FRONTEND_DIR"
 echo "INFO: Building frontend..."
 
-# Set API environment variables for build (REACT_APP_* for CRA, VITE_* for Vite)
-export REACT_APP_API_URL="$API_BASE_URL"
-export REACT_APP_API_ENDPOINTS="$API_ENDPOINTS"
+# Set API environment variable for the Vite build
 export VITE_API_URL="$API_BASE_URL"
-export VITE_API_ENDPOINTS="$API_ENDPOINTS"
 
 # Run production build
 npm run build

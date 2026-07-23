@@ -1,4 +1,4 @@
--- ACME Project Management Platform — PostgreSQL schema
+-- CITI Project Management Platform — PostgreSQL schema
 -- Apply with: psql "$POSTGRES_CONN" -f db/schema.sql
 
 CREATE TYPE user_role AS ENUM ('admin', 'project_manager', 'team_member', 'finance', 'viewer');
@@ -87,3 +87,61 @@ CREATE INDEX idx_deliverables_project_id ON deliverables(project_id);
 CREATE INDEX idx_deliverables_owner_id ON deliverables(owner_id);
 CREATE INDEX idx_resource_allocations_resource_id ON resource_allocations(resource_id);
 CREATE INDEX idx_resource_allocations_project_id ON resource_allocations(project_id);
+
+-- ---------------------------------------------------------------------------
+-- Team management module (workshop brief: teams, individuals, achievements).
+-- Individuals are org people, deliberately separate from login `users` — the
+-- brief rules out integration with an Employee Directory, so team rosters are
+-- self-service data, not accounts.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE individuals (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(255) NOT NULL,
+    email           VARCHAR(255) UNIQUE,
+    location        VARCHAR(255) NOT NULL,
+    -- Direct staff are employees; non-direct covers contractors/vendors.
+    is_direct_staff BOOLEAN NOT NULL DEFAULT TRUE,
+    is_org_leader   BOOLEAN NOT NULL DEFAULT FALSE,
+    metadata        JSONB NOT NULL DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE teams (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(255) NOT NULL UNIQUE,
+    location        VARCHAR(255) NOT NULL,
+    leader_id       INTEGER REFERENCES individuals(id) ON DELETE SET NULL,
+    -- The individual this team reports to (who may be an org leader).
+    reports_to_id   INTEGER REFERENCES individuals(id) ON DELETE SET NULL,
+    metadata        JSONB NOT NULL DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE team_members (
+    id              SERIAL PRIMARY KEY,
+    team_id         INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    individual_id   INTEGER NOT NULL REFERENCES individuals(id) ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (team_id, individual_id)
+);
+
+CREATE TABLE achievements (
+    id              SERIAL PRIMARY KEY,
+    team_id         INTEGER NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    -- Normalized to the first day of the month by the service layer.
+    month           DATE NOT NULL,
+    title           VARCHAR(255) NOT NULL,
+    description     TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_teams_leader_id ON teams(leader_id);
+CREATE INDEX idx_teams_reports_to_id ON teams(reports_to_id);
+CREATE INDEX idx_team_members_team_id ON team_members(team_id);
+CREATE INDEX idx_team_members_individual_id ON team_members(individual_id);
+CREATE INDEX idx_achievements_team_id ON achievements(team_id);
+CREATE INDEX idx_achievements_month ON achievements(month);

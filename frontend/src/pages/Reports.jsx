@@ -23,12 +23,13 @@ import Typography from '@mui/material/Typography';
 
 import DataTable from '../components/DataTable';
 import PageState from '../components/PageState';
-import { STATUS_COLORS } from '../theme';
+import { useStatusColors, DISPLAY_FONT } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 import * as projectsService from '../services/projectsService';
 import * as budgetsService from '../services/budgetsService';
 import * as resourcesService from '../services/resourcesService';
 import * as deliverablesService from '../services/deliverablesService';
+import StatusIndicator from '../components/StatusIndicator';
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -55,13 +56,8 @@ function yesNo(value) {
 }
 
 function StatusChip({ status }) {
-  return (
-    <Chip
-      size="small"
-      label={status}
-      sx={{ bgcolor: STATUS_COLORS[status] || 'grey.500', color: 'common.white' }}
-    />
-  );
+  const statusColors = useStatusColors();
+  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={status} />;
 }
 
 function FlagCell({ active, label }) {
@@ -364,7 +360,7 @@ export default function Reports() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
         Reports
       </Typography>
       <Typography variant="body1" color="text.secondary">

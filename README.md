@@ -6,7 +6,7 @@ solves a theoretical business problem.
 
 ## What This Repository Builds
 
-This participant repository implements the **ACME Project Management Platform** —
+This participant repository implements the **CITI Project Management Platform** —
 a centralized replacement for spreadsheet- and email-based project tracking.
 The requirements that define it live in [`req/`](./req):
 
@@ -77,7 +77,7 @@ below is a real example of requirements and expectations for participant(s):
 
 ### Requirements: Business Problem
 
-Our company ACME Inc. is going through a massive organizational transformation
+Our company CITI Inc. is going through a massive organizational transformation
 to become a more data-driven organization. Information about teams structure
 and performance is currently scattered across multiple systems, making it
 difficult to get a comprehensive view of team dynamics and achievements.

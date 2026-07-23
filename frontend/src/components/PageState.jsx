@@ -17,7 +17,7 @@ import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import InboxIcon from '@mui/icons-material/Inbox';
+import { EmptyInboxIcon } from './icons';
 
 /**
  * Skeleton placeholder shaped like the content it stands in for, so the layout
@@ -64,7 +64,7 @@ export function EmptyState({ title = 'Nothing here yet', message, actionLabel, o
   return (
     <Paper sx={{ p: 6, textAlign: 'center' }}>
       <Box sx={{ color: 'text.disabled', mb: 2 }}>
-        {icon || <InboxIcon sx={{ fontSize: 56 }} />}
+        {icon || <EmptyInboxIcon size={56} />}
       </Box>
       <Typography variant="h6" gutterBottom>
         {title}

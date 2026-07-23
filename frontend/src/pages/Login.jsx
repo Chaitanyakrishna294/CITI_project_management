@@ -8,8 +8,7 @@ import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { ShowPasswordIcon, HidePasswordIcon } from '../components/icons';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -50,7 +49,7 @@ export default function Login() {
     >
       <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider' }}>
         <Typography variant="h5" component="h1" gutterBottom sx={{ color: 'primary.main', fontWeight: 700 }}>
-          ACME Project Management
+          CITI Project Management
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Sign in to continue
@@ -89,7 +88,7 @@ export default function Login() {
                       onClick={() => setShowPassword((visible) => !visible)}
                       edge="end"
                     >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                      {showPassword ? <HidePasswordIcon /> : <ShowPasswordIcon />}
                     </IconButton>
                   </InputAdornment>
                 ),
@@ -106,6 +105,14 @@ export default function Login() {
           >
             {submitting ? 'Signing in…' : 'Login'}
           </Button>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            align="center"
+            sx={{ display: 'block', mt: 3 }}
+          >
+            No account? Accounts are created by your administrator — ask them for access.
+          </Typography>
         </Box>
       </Paper>
     </Box>

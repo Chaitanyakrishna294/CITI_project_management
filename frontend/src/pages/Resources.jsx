@@ -24,6 +24,8 @@ import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as resourcesService from '../services/resourcesService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
+import PageHeader from '../components/PageHeader';
+import { EmptyWorkIllustration } from '../components/illustrations';
 
 const emptyForm = { user_id: '', title: '', department: '', weekly_capacity: 100 };
 
@@ -208,9 +210,14 @@ export default function Resources() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-        Resources
-      </Typography>
+      <PageHeader
+        title="Resources"
+        summary={
+          !loading && !error
+            ? `${resources.length} people · ${resources.filter((r) => Number(r.total_allocation_pct) > Number(r.weekly_capacity)).length} over-allocated`
+            : undefined
+        }
+      />
 
       {showSkeleton && <LoadingState variant="table" label="Loading resources…" />}
 
@@ -222,6 +229,7 @@ export default function Resources() {
           go and the §15 call to action takes the whole screen. */}
       {!showSkeleton && !error && resources.length === 0 && !filtered && (
         <EmptyState
+          icon={<EmptyWorkIllustration />}
           title="No resources yet"
           message="Add a resource to make someone available for project allocation."
           actionLabel={canManage ? 'Add Resource' : undefined}

@@ -29,7 +29,21 @@ export default function LineChart({ points, series, formatValue = (v) => String(
   const gridLines = [0, 0.5, 1];
 
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+    <Box
+      sx={{
+        width: '100%',
+        overflowX: 'auto',
+        // Line-draw on mount (glow-up brief v2 §2): the series sweeps in
+        // left-to-right in under 200ms. pathLength is normalised to 100 so
+        // one keyframe serves every line; the global reduced-motion rule in
+        // index.css collapses it to instant.
+        '@keyframes lineDraw': {
+          from: { strokeDashoffset: 100 },
+          to: { strokeDashoffset: 0 },
+        },
+        '& .line-series': { animation: 'lineDraw 0.2s ease-out both' },
+      }}
+    >
       <svg
         role="img"
         aria-label={`Line chart of ${series.map((s) => s.label).join(' and ')} over time`}
@@ -64,7 +78,16 @@ export default function LineChart({ points, series, formatValue = (v) => String(
             .join(' ');
           return (
             <g key={s.label}>
-              <path d={path} fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" />
+              <path
+                d={path}
+                className="line-series"
+                fill="none"
+                stroke={s.color}
+                strokeWidth={2}
+                strokeLinejoin="round"
+                pathLength={100}
+                strokeDasharray={100}
+              />
               {points.map((p, i) => (
                 <Tooltip
                   key={p.label}

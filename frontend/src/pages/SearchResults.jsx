@@ -14,6 +14,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import * as projectsService from '../services/projectsService';
 import * as deliverablesService from '../services/deliverablesService';
 import * as resourcesService from '../services/resourcesService';
+import { DISPLAY_FONT } from '../theme';
 
 const EMPTY_RESULTS = { projects: [], deliverables: [], resources: [] };
 
@@ -56,7 +57,7 @@ export default function SearchResults() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
         Search Results {q && <Typography component="span" variant="h5" color="text.secondary">for &ldquo;{q}&rdquo;</Typography>}
       </Typography>
 

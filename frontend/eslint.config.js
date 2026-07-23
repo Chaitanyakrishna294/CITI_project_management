@@ -29,7 +29,7 @@ export default defineConfig([
       // them buys nothing but an extra fast-refresh round trip in dev.
       'react-refresh/only-export-components': [
         'error',
-        { allowConstantExport: true, allowExportNames: ['AuthContext', 'useAuth'] },
+        { allowConstantExport: true, allowExportNames: ['AuthContext', 'useAuth', 'useColorMode'] },
       ],
     },
   },

@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import DeliverablesPanel from '../components/DeliverablesPanel';
 import ProjectResourcesPanel from '../components/ProjectResourcesPanel';
 import BudgetPanel from '../components/BudgetPanel';
+import { DISPLAY_FONT } from '../theme';
 
 const STATUS_COLOR = { active: 'success', completed: 'default', delayed: 'warning', archived: 'default' };
 
@@ -43,7 +44,7 @@ export default function ProjectDetails() {
       </Button>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        <Typography variant="h4" component="h1">{project.name}</Typography>
+        <Typography variant="h4" component="h1" sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>{project.name}</Typography>
         <Chip color={STATUS_COLOR[project.status]} label={project.status} />
       </Box>
       <Typography variant="body2" color="text.secondary" gutterBottom>

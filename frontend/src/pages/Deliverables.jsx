@@ -22,7 +22,10 @@ import * as deliverablesService from '../services/deliverablesService';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
-import { STATUS_COLORS } from '../theme';
+import { useStatusColors } from '../theme';
+import PageHeader from '../components/PageHeader';
+import { EmptyWorkIllustration } from '../components/illustrations';
+import StatusIndicator from '../components/StatusIndicator';
 
 const STATUSES = ['not_started', 'in_progress', 'blocked', 'completed'];
 
@@ -32,7 +35,8 @@ function today() {
 }
 
 function StatusChip({ status }) {
-  return <Chip label={status} sx={{ bgcolor: STATUS_COLORS[status], color: 'common.white' }} />;
+  const statusColors = useStatusColors();
+  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={status} />;
 }
 
 export default function Deliverables() {
@@ -193,9 +197,14 @@ export default function Deliverables() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" sx={{ mb: 2 }}>
-        Deliverables
-      </Typography>
+      <PageHeader
+        title="Deliverables"
+        summary={
+          !loading && !error
+            ? `${rows.length} deliverables · ${rows.filter((d) => d.status === 'in_progress').length} in progress · ${rows.filter((d) => d.status === 'blocked').length} blocked`
+            : undefined
+        }
+      />
 
       <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
         <TextField
@@ -261,6 +270,7 @@ export default function Deliverables() {
       {!loading && error && <ErrorState error={error} onRetry={retry} />}
       {!loading && !error && rows.length === 0 && (
         <EmptyState
+          icon={<EmptyWorkIllustration />}
           title="No deliverables found"
           message={
             hasFilters

@@ -29,7 +29,9 @@ import ChartFrame from '../components/charts/ChartFrame';
 import BarChart from '../components/charts/BarChart';
 import DonutChart from '../components/charts/DonutChart';
 import LineChart from '../components/charts/LineChart';
-import { CHART_COLORS, STATUS_COLORS } from '../theme';
+import { useChartColors, useStatusColors, DISPLAY_FONT } from '../theme';
+import StatusIndicator from '../components/StatusIndicator';
+import KpiCard from '../components/KpiCard';
 
 const DELIVERABLE_STATUSES = [
   { key: 'not_started', label: 'Not started' },
@@ -60,25 +62,12 @@ function monthKey(isoDate) {
   return `${name} ${year.slice(2)}`;
 }
 
-/** KPI card — the "hero number" form: one figure, its context, no plot. */
-function KpiCard({ label, value, caption, captionColor = 'text.secondary', valueColor }) {
-  return (
-    <Paper sx={{ p: 2, height: '100%' }}>
-      <Typography variant="subtitle2" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography variant="h4" component="p" color={valueColor}>
-        {value}
-      </Typography>
-      <Typography variant="caption" color={captionColor}>
-        {caption}
-      </Typography>
-    </Paper>
-  );
-}
+
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const chartColors = useChartColors();
+  const statusColors = useStatusColors();
   // Bumping the token re-runs the fetch effect; retrying never has to write
   // state before the request is issued.
   const [reloadToken, setReloadToken] = useState(0);
@@ -142,6 +131,9 @@ export default function Dashboard() {
     const overAllocated = data.resources.filter(
       (r) => Number(r.total_allocation_pct) > Number(r.weekly_capacity)
     );
+    const overBudget = data.budgets.filter(
+      (b) => Number(b.actual_spend) > Number(b.planned_amount)
+    );
 
     const upcomingDeadlines = data.deliverables
       .filter((d) => d.status !== 'completed' && d.due_date && d.due_date >= today)
@@ -152,7 +144,7 @@ export default function Dashboard() {
     const statusSlices = DELIVERABLE_STATUSES.map((s) => ({
       label: s.label,
       value: data.deliverables.filter((d) => d.status === s.key).length,
-      color: STATUS_COLORS[s.key],
+      color: statusColors[s.key],
     }));
 
     // Magnitude comparison: planned vs actual for the largest budgets. Beyond
@@ -185,6 +177,7 @@ export default function Dashboard() {
       activeProjects,
       completedProjects,
       atRiskProjects,
+      overBudget,
       totalPlanned,
       totalSpent,
       budgetPct,
@@ -195,14 +188,14 @@ export default function Dashboard() {
       budgetBars,
       deadlineTrend,
     };
-  }, [data]);
+  }, [data, statusColors]);
 
   if (error) return <ErrorState title="Could not load the dashboard" error={error} onRetry={load} />;
 
   if (!summary) {
     return (
       <Box>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
           Dashboard
         </Typography>
         <Stack spacing={2}>
@@ -217,12 +210,97 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
         Dashboard
       </Typography>
       <Typography variant="body1" color="text.secondary" gutterBottom>
         Welcome back, {user?.name} ({user?.role})
       </Typography>
+
+      {/* Attention tier (glow-up brief §4.4): what needs acting on today sits
+          above the steady-state KPIs, not mixed in among them. */}
+      {summary.atRiskProjects.length + summary.overAllocated.length + summary.overBudget.length > 0 ? (
+        <Paper sx={{ mt: 2, p: 2, borderLeft: '3px solid var(--color-accent)' }}>
+          {/* Serif micro-heading + accent border: the attention panel is
+              structurally different from the KPI row, not just tinted. */}
+          <Typography
+            variant="subtitle1"
+            component="h2"
+            gutterBottom
+            sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600 }}
+          >
+            Needs attention
+          </Typography>
+          <Grid container spacing={2}>
+            {summary.atRiskProjects.length > 0 && (
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Projects at risk · {summary.atRiskProjects.length}
+                </Typography>
+                <List dense disablePadding>
+                  {summary.atRiskProjects.slice(0, 4).map((p) => (
+                    <ListItem key={p.id} disableGutters>
+                      <ListItemText
+                        primary={
+                          <Link component={RouterLink} to={`/projects/${p.id}`}>
+                            {p.name}
+                          </Link>
+                        }
+                        secondary={`${p.manager_name} · ends ${p.end_date || 'n/a'}`}
+                      />
+                      <StatusIndicator color="warning.main" label={p.status} />
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+            )}
+            {summary.overAllocated.length > 0 && (
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Over-allocated people · {summary.overAllocated.length}
+                </Typography>
+                <List dense disablePadding>
+                  {summary.overAllocated.slice(0, 4).map((r) => (
+                    <ListItem key={r.id} disableGutters>
+                      <ListItemText
+                        primary={r.user_name || r.title || `Resource ${r.id}`}
+                        secondary={`${Number(r.total_allocation_pct).toFixed(0)}% allocated of ${Number(r.weekly_capacity).toFixed(0)}% capacity`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+            )}
+            {summary.overBudget.length > 0 && (
+              <Grid item xs={12} md={4}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Over budget · {summary.overBudget.length}
+                </Typography>
+                <List dense disablePadding>
+                  {summary.overBudget.slice(0, 4).map((b) => (
+                    <ListItem key={b.id} disableGutters>
+                      <ListItemText
+                        primary={
+                          <Link component={RouterLink} to={`/projects/${b.project_id}`}>
+                            {b.project_name}
+                          </Link>
+                        }
+                        secondary={`${currency.format(Number(b.actual_spend))} spent of ${currency.format(Number(b.planned_amount))}`}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              </Grid>
+            )}
+          </Grid>
+        </Paper>
+      ) : (
+        <Paper sx={{ mt: 2, p: 2, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
+          <Typography variant="body2" color="text.secondary">
+            All clear — no projects at risk, nobody over-allocated, no budgets over plan.
+          </Typography>
+        </Paper>
+      )}
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -283,8 +361,8 @@ export default function Dashboard() {
             empty={summary.budgetBars.length === 0}
             emptyMessage="No budgets recorded yet."
             legend={[
-              { color: CHART_COLORS[0], label: 'Planned' },
-              { color: CHART_COLORS[1], label: 'Actual spend' },
+              { color: chartColors[0], label: 'Planned' },
+              { color: chartColors[1], label: 'Actual spend' },
             ]}
             tableColumns={['Project', 'Planned', 'Actual spend']}
             tableRows={summary.budgetBars.map((b) => [
@@ -296,8 +374,8 @@ export default function Dashboard() {
             <BarChart
               data={summary.budgetBars}
               series={[
-                { label: 'Planned', color: CHART_COLORS[0] },
-                { label: 'Actual spend', color: CHART_COLORS[1] },
+                { label: 'Planned', color: chartColors[0] },
+                { label: 'Actual spend', color: chartColors[1] },
               ]}
               formatValue={(v) => currency.format(v)}
             />
@@ -311,8 +389,8 @@ export default function Dashboard() {
             empty={summary.deadlineTrend.length === 0}
             emptyMessage="No deliverables have due dates yet."
             legend={[
-              { color: CHART_COLORS[0], label: 'Due' },
-              { color: CHART_COLORS[1], label: 'Completed' },
+              { color: chartColors[0], label: 'Due' },
+              { color: chartColors[1], label: 'Completed' },
             ]}
             tableColumns={['Month', 'Due', 'Completed']}
             tableRows={summary.deadlineTrend.map((p) => [p.label, p.values[0], p.values[1]])}
@@ -320,8 +398,8 @@ export default function Dashboard() {
             <LineChart
               points={summary.deadlineTrend}
               series={[
-                { label: 'Due', color: CHART_COLORS[0] },
-                { label: 'Completed', color: CHART_COLORS[1] },
+                { label: 'Due', color: chartColors[0] },
+                { label: 'Completed', color: chartColors[1] },
               ]}
             />
           </ChartFrame>
@@ -344,40 +422,13 @@ export default function Dashboard() {
                     primary={d.title}
                     secondary={`Owner: ${d.owner_name || 'Unassigned'} · Due ${d.due_date}`}
                   />
-                  <Chip label={d.status} />
+                  <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={d.status} />
                 </ListItem>
               ))}
             </List>
           </Paper>
         </Grid>
 
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" component="h2" gutterBottom>
-              Projects at Risk
-            </Typography>
-            {summary.atRiskProjects.length === 0 && (
-              <Typography variant="body2" color="text.secondary">
-                No projects currently at risk.
-              </Typography>
-            )}
-            <List dense>
-              {summary.atRiskProjects.map((p) => (
-                <ListItem key={p.id} disableGutters>
-                  <ListItemText
-                    primary={
-                      <Link component={RouterLink} to={`/projects/${p.id}`}>
-                        {p.name}
-                      </Link>
-                    }
-                    secondary={`${p.manager_name} · ends ${p.end_date || 'n/a'}`}
-                  />
-                  <Chip color="warning" label={p.status} />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Grid>
       </Grid>
 
       {/* Progress indicator for the portfolio-wide budget, per §12. */}
