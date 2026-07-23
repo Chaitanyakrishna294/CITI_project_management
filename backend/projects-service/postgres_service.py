@@ -2,6 +2,8 @@
 PostgreSQL access for the projects service.
 """
 
+import json
+
 from psycopg import connect
 from psycopg.rows import dict_row
 
@@ -60,7 +62,7 @@ def list_projects(config, filters):
     query = (
         "SELECT p.id, p.name, p.description, p.status, p.manager_id, "
         "u.name AS manager_name, p.department, p.start_date, p.end_date, "
-        "b.planned_amount, b.actual_spend, "
+        "b.planned_amount, b.actual_spend, p.metadata, "
         "p.created_at, p.updated_at "
         "FROM projects p "
         "JOIN users u ON u.id = p.manager_id "
@@ -88,7 +90,7 @@ def get_project(config, project_id):
             cur.execute(
                 "SELECT p.id, p.name, p.description, p.status, p.manager_id, "
                 "u.name AS manager_name, p.department, p.start_date, p.end_date, "
-                "p.created_at, p.updated_at "
+                "p.metadata, p.created_at, p.updated_at "
                 "FROM projects p JOIN users u ON u.id = p.manager_id "
                 "WHERE p.id = %s",
                 (project_id,),
@@ -115,16 +117,16 @@ def get_active_manager(config, user_id):
         raise
 
 
-def create_project(config, name, description, manager_id, department, start_date, end_date):
+def create_project(config, name, description, manager_id, department, start_date, end_date, metadata=None):
     global PG_CONN
     try:
         conn = get_connection(config)
         with conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO projects (name, description, manager_id, department, start_date, end_date) "
-                "VALUES (%s, %s, %s, %s, %s, %s) "
-                "RETURNING id, name, description, status, manager_id, department, start_date, end_date, created_at, updated_at",
-                (name, description, manager_id, department, start_date, end_date),
+                "INSERT INTO projects (name, description, manager_id, department, start_date, end_date, metadata) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s) "
+                "RETURNING id, name, description, status, manager_id, department, start_date, end_date, metadata, created_at, updated_at",
+                (name, description, manager_id, department, start_date, end_date, json.dumps(metadata or {})),
             )
             return cur.fetchone()
     except Exception:
@@ -133,10 +135,12 @@ def create_project(config, name, description, manager_id, department, start_date
 
 
 def update_project(config, project_id, fields):
-    """fields: dict subset of {name, description, manager_id, department, start_date, end_date, status}"""
+    """fields: dict subset of {name, description, manager_id, department, start_date, end_date, status, metadata}"""
     global PG_CONN
     if not fields:
         return get_project(config, project_id)
+    if "metadata" in fields:
+        fields = {**fields, "metadata": json.dumps(fields["metadata"] or {})}
     set_clause = ", ".join(f"{key} = %s" for key in fields)
     values = list(fields.values()) + [project_id]
     try:

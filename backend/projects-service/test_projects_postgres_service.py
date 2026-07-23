@@ -25,6 +25,22 @@ def test_create_project(pg_config, make_user):
     assert project["status"] == "active"
 
 
+def test_create_project_with_metadata_round_trips(pg_config, make_user):
+    manager = make_user(role="project_manager")
+    metadata = {"Client Contact": "bob@client.com", "original_status": "In Progress"}
+    created = create_project(
+        pg_config, "Meta Proj", None, manager["id"], None, None, None, metadata
+    )
+    assert created["metadata"] == metadata
+    assert get_project(pg_config, created["id"])["metadata"] == metadata
+
+
+def test_create_project_without_metadata_defaults_to_empty(pg_config, make_user):
+    manager = make_user(role="project_manager")
+    created = create_project(pg_config, "No Meta", None, manager["id"], None, None, None)
+    assert created["metadata"] == {}
+
+
 def test_get_project(pg_config, make_user):
     manager = make_user(role="project_manager")
     created = create_project(pg_config, "Get Me", None, manager["id"], None, None, None)
@@ -58,6 +74,15 @@ def test_update_project(pg_config, make_user):
     assert updated["department"] == "Sales"
 
 
+def test_update_project_metadata(pg_config, make_user):
+    manager = make_user(role="project_manager")
+    created = create_project(
+        pg_config, "Meta Update", None, manager["id"], None, None, None, {"Region": "EMEA"}
+    )
+    updated = update_project(pg_config, created["id"], {"metadata": {"Region": "APAC"}})
+    assert updated["metadata"] == {"Region": "APAC"}
+
+
 def test_update_project_no_fields_returns_current(pg_config, make_user):
     manager = make_user(role="project_manager")
     created = create_project(pg_config, "Unchanged", None, manager["id"], None, None, None)
@@ -82,6 +107,15 @@ def test_list_projects_no_filters(pg_config, make_user):
     create_project(pg_config, "P2", None, manager["id"], None, None, None)
     results = list_projects(pg_config, {})
     assert len(results) == 2
+
+
+def test_list_projects_includes_metadata(pg_config, make_user):
+    manager = make_user(role="project_manager")
+    create_project(
+        pg_config, "Meta List", None, manager["id"], None, None, None, {"Region": "EMEA"}
+    )
+    results = list_projects(pg_config, {})
+    assert results[0]["metadata"] == {"Region": "EMEA"}
 
 
 def test_list_projects_filter_by_status(pg_config, make_user):

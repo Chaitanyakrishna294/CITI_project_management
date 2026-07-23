@@ -48,6 +48,7 @@ const project = {
   department: 'Marketing',
   status: 'active',
   description: 'Revamp the corporate website.',
+  metadata: {},
 };
 
 beforeEach(() => {
@@ -96,6 +97,31 @@ describe('ProjectDetails page', () => {
 
     await screen.findByText('Website Revamp');
     expect(screen.queryByText('Revamp the corporate website.')).not.toBeInTheDocument();
+  });
+
+  it('renders imported metadata keys and values when metadata is non-empty', async () => {
+    projectsService.getProject.mockResolvedValue({
+      project: {
+        ...project,
+        metadata: { 'Client Contact': 'bob@client.com', Headcount: 12 },
+      },
+    });
+    renderDetails({ user: adminUser });
+
+    await screen.findByText('Website Revamp');
+    expect(screen.getByRole('heading', { name: 'Imported fields' })).toBeInTheDocument();
+    expect(screen.getByText('Client Contact')).toBeInTheDocument();
+    expect(screen.getByText('bob@client.com')).toBeInTheDocument();
+    expect(screen.getByText('Headcount')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+  });
+
+  it('renders no Imported fields block when metadata is empty', async () => {
+    projectsService.getProject.mockResolvedValue({ project });
+    renderDetails({ user: adminUser });
+
+    await screen.findByText('Website Revamp');
+    expect(screen.queryByText('Imported fields')).not.toBeInTheDocument();
   });
 
   it('"Back to Projects" button navigates to /projects', async () => {

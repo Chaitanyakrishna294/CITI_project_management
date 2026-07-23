@@ -534,6 +534,110 @@ describe('Projects page', () => {
     });
   });
 
+  describe('CSV import', () => {
+    // Exercises the whole mapping spec: aliased headers (Project Name, Manager),
+    // an unknown column (Client Contact) → metadata, known columns absent from
+    // the file (description, dept, dates) → null, a nameless row, an invalid
+    // status + non-numeric manager, and an API rejection.
+    const csv = [
+      'Project Name,Status,Manager,Client Contact',
+      'Alpha,Active,3,bob@client.com',
+      ',Active,3,ignored@client.com',
+      'Beta,In Progress,Alice,',
+      'Gamma,Active,4,',
+    ].join('\n');
+
+    function uploadCsv(user, text = csv) {
+      const file = new File([text], 'projects.csv', { type: 'text/csv' });
+      return user.upload(screen.getByLabelText('Import projects from CSV'), file);
+    }
+
+    it('hides the Import button from viewers', async () => {
+      mockList([project1]);
+      renderWithAuth(<Projects />, { user: viewerUser });
+      await screen.findByText('Website Revamp');
+      expect(screen.queryByRole('button', { name: 'Import' })).not.toBeInTheDocument();
+    });
+
+    it('imports mapped rows, skips bad ones, and reports the results', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      projectsService.createProject.mockImplementation((payload) =>
+        payload.name === 'Gamma'
+          ? Promise.reject(new Error('duplicate name'))
+          : Promise.resolve({ project: {} })
+      );
+      renderWithAuth(<Projects />, { user: pmUser });
+      await screen.findByText('Website Revamp');
+      projectsService.listProjects.mockClear();
+
+      await uploadCsv(user);
+
+      await waitFor(() => {
+        expect(projectsService.createProject).toHaveBeenCalledTimes(3);
+      });
+      // Aliases resolved, unknown column in metadata, absent known columns null.
+      expect(projectsService.createProject).toHaveBeenNthCalledWith(1, {
+        name: 'Alpha',
+        description: null,
+        status: 'active',
+        manager_id: 3,
+        department: null,
+        start_date: null,
+        end_date: null,
+        metadata: { 'Client Contact': 'bob@client.com' },
+      });
+      // Invalid status and manager fall back into metadata; the null status key
+      // is omitted (exact-match assertion) so the backend defaults it; the
+      // signed-in user becomes the manager. Beta's empty cell stays out of
+      // metadata.
+      expect(projectsService.createProject).toHaveBeenNthCalledWith(2, {
+        name: 'Beta',
+        description: null,
+        manager_id: pmUser.id,
+        department: null,
+        start_date: null,
+        end_date: null,
+        metadata: { original_status: 'In Progress', original_manager: 'Alice' },
+      });
+
+      expect(await screen.findByText('2 projects imported')).toBeInTheDocument();
+      expect(projectsService.listProjects).toHaveBeenCalled();
+
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Import results')).toBeInTheDocument();
+      expect(within(dialog).getByText('2 imported · 2 skipped')).toBeInTheDocument();
+      expect(within(dialog).getByText('Row 3: no project name')).toBeInTheDocument();
+      expect(within(dialog).getByText('Row 5: duplicate name')).toBeInTheDocument();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+    });
+
+    it('disables and relabels the Import button while the import runs, no dialog when clean', async () => {
+      const user = userEvent.setup();
+      mockList([project1]);
+      let resolveCreate;
+      projectsService.createProject.mockReturnValue(new Promise((resolve) => { resolveCreate = resolve; }));
+      renderWithAuth(<Projects />, { user: pmUser });
+      await screen.findByText('Website Revamp');
+
+      await uploadCsv(user, 'name\nSolo');
+
+      // component="label" renders no native button, so MUI signals the
+      // disabled state through aria-disabled rather than the attribute.
+      const button = await screen.findByRole('button', { name: 'Importing…' });
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+
+      resolveCreate({ project: {} });
+      expect(await screen.findByText('1 projects imported')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
   describe('per-row Edit/Archive visibility', () => {
     it('admin sees Edit/Archive on all non-archived rows managed by anyone, Archive hidden for archived rows', async () => {
       mockList([project1, project2]);

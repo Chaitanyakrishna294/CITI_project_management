@@ -21,17 +21,19 @@ import MenuItem from '@mui/material/MenuItem';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 
 import ConfirmDialog from '../components/ConfirmDialog';
 import DataTable from '../components/DataTable';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
+import { parseCsv, mapImportRow } from '../utils/importCsv';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
 import { useStatusColors, statusLabel } from '../theme';
 import PageHeader from '../components/PageHeader';
 import StatusIndicator from '../components/StatusIndicator';
-import { AddIcon } from '../components/icons';
+import { AddIcon, UploadIcon } from '../components/icons';
 import { EmptyWorkIllustration } from '../components/illustrations';
 
 const STATUSES = ['active', 'completed', 'delayed', 'archived'];
@@ -97,6 +99,10 @@ export default function Projects() {
   // The project the archive confirmation is currently asking about.
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [toast, setToast] = useState('');
+
+  const [importing, setImporting] = useState(false);
+  // Non-null only when an import left rows behind — it opens the results dialog.
+  const [importResult, setImportResult] = useState(null);
 
   const canCreate = user?.role === 'admin' || user?.role === 'project_manager';
   const filtered = Object.values(filters).some(Boolean);
@@ -180,6 +186,56 @@ export default function Projects() {
       setFormError(err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  // jsdom (and old Safari) lack File.text(), so the tests need FileReader.
+  function readFileText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  }
+
+  async function handleImportFile(e) {
+    const file = e.target.files[0];
+    // Clear the input so picking the same file again (after fixing it) re-fires.
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    let imported = 0;
+    const skipped = [];
+    try {
+      const { headers, rows } = parseCsv(await readFileText(file));
+      for (let i = 0; i < rows.length; i += 1) {
+        const rowNumber = i + 2; // the file's row 1 is the header line
+        const { record, metadata } = mapImportRow(headers, rows[i], { defaultManagerId: user.id });
+        if (!record.name) {
+          skipped.push({ row: rowNumber, reason: 'no project name' });
+          continue;
+        }
+        const payload = { ...record, metadata };
+        // A null status means "let the backend default it to active" — sending
+        // the key would trip enum validation.
+        if (payload.status == null) delete payload.status;
+        try {
+          // Sequential on purpose: keeps file order and avoids hammering the API.
+          await projectsService.createProject(payload);
+          imported += 1;
+        } catch (err) {
+          skipped.push({ row: rowNumber, reason: err.message });
+        }
+      }
+      reloadProjects();
+      setToast(`${imported} projects imported`);
+      if (skipped.length > 0) setImportResult({ imported, skipped });
+    } catch (err) {
+      // Unreadable or unparseable file — nothing was created yet.
+      setToast(err.message);
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -351,6 +407,23 @@ export default function Projects() {
           exportFilename="projects.csv"
           emptyMessage="No projects match these filters."
           toolbar={toolbar}
+          actions={
+            canCreate && (
+              // component="label" makes the whole button the file input's label,
+              // so no ref/click plumbing is needed to open the picker.
+              <Button size="small" component="label" startIcon={<UploadIcon />} disabled={importing}>
+                {importing ? 'Importing…' : 'Import'}
+                <input
+                  type="file"
+                  accept=".csv"
+                  hidden
+                  disabled={importing}
+                  aria-label="Import projects from CSV"
+                  onChange={handleImportFile}
+                />
+              </Button>
+            )
+          }
         />
       )}
 
@@ -424,6 +497,27 @@ export default function Projects() {
             </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      <Dialog open={Boolean(importResult)} onClose={() => setImportResult(null)}>
+        <DialogTitle>Import results</DialogTitle>
+        <DialogContent>
+          {importResult && (
+            <>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                {importResult.imported} imported · {importResult.skipped.length} skipped
+              </Typography>
+              {importResult.skipped.map((s) => (
+                <Typography key={s.row} variant="body2" color="text.secondary">
+                  Row {s.row}: {s.reason}
+                </Typography>
+              ))}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImportResult(null)}>Close</Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar

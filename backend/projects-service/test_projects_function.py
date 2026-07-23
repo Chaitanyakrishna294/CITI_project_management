@@ -157,6 +157,54 @@ def test_create_project_manager_id_nonexistent_user(make_user, auth_headers):
     assert resp["statusCode"] == 400
 
 
+def test_create_project_with_metadata_round_trips(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    metadata = {"Client Contact": "bob@client.com", "original_status": "In Progress"}
+    event = make_event(
+        "POST",
+        "/projects",
+        body={"name": "Imported", "manager_id": manager["id"], "metadata": metadata},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 201
+    project = _body(resp)["project"]
+    assert project["metadata"] == metadata
+
+    resp = handler(make_event("GET", f"/projects/{project['id']}", headers=auth_headers(admin)))
+    assert _body(resp)["project"]["metadata"] == metadata
+
+
+def test_create_project_without_metadata_defaults_to_empty(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    event = make_event(
+        "POST",
+        "/projects",
+        body={"name": "No Meta", "manager_id": manager["id"]},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 201
+    assert _body(resp)["project"]["metadata"] == {}
+
+
+def test_create_project_non_object_metadata_rejected(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    for bad in ("a string", [1, 2], 42):
+        event = make_event(
+            "POST",
+            "/projects",
+            body={"name": "Bad Meta", "manager_id": manager["id"], "metadata": bad},
+            headers=auth_headers(admin),
+        )
+        resp = handler(event)
+        assert resp["statusCode"] == 400
+        assert "metadata" in _body(resp)["error"]
+
+
 # ---------------------------------------------------------------------------
 # GET /projects (list + filters)
 # ---------------------------------------------------------------------------
@@ -212,6 +260,21 @@ def test_list_projects_filter_by_status(make_user, auth_headers, db_conn):
     projects = _body(resp)["projects"]
     assert len(projects) == 1
     assert projects[0]["id"] == p1["id"]
+
+
+def test_list_projects_includes_metadata(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    event = make_event(
+        "POST",
+        "/projects",
+        body={"name": "Meta List", "manager_id": manager["id"], "metadata": {"Region": "EMEA"}},
+        headers=auth_headers(admin),
+    )
+    assert handler(event)["statusCode"] == 201
+
+    projects = _body(handler(make_event("GET", "/projects", headers=auth_headers(admin))))["projects"]
+    assert projects[0]["metadata"] == {"Region": "EMEA"}
 
 
 def test_list_projects_filter_by_q(make_user, auth_headers):
@@ -469,6 +532,37 @@ def test_update_project_manager_id_to_invalid_manager_rejected(make_user, auth_h
         "PUT",
         f"/projects/{p['id']}",
         body={"manager_id": viewer["id"]},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 400
+
+
+def test_update_project_metadata(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    p = _create(auth_headers(admin), "Meta Edit", manager["id"])
+
+    event = make_event(
+        "PUT",
+        f"/projects/{p['id']}",
+        body={"metadata": {"Region": "APAC"}},
+        headers=auth_headers(admin),
+    )
+    resp = handler(event)
+    assert resp["statusCode"] == 200
+    assert _body(resp)["project"]["metadata"] == {"Region": "APAC"}
+
+
+def test_update_project_non_object_metadata_rejected(make_user, auth_headers):
+    admin = make_user(role="admin")
+    manager = make_user(role="project_manager")
+    p = _create(auth_headers(admin), "Meta Reject", manager["id"])
+
+    event = make_event(
+        "PUT",
+        f"/projects/{p['id']}",
+        body={"metadata": "not an object"},
         headers=auth_headers(admin),
     )
     resp = handler(event)

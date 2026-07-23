@@ -12,9 +12,11 @@ import { ShowPasswordIcon, HidePasswordIcon } from '../components/icons';
 import { DISPLAY_FONT } from '../theme';
 import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
+import { useColorMode } from '../contexts/ColorModeContext';
 
 export default function Login() {
   const { login } = useAuth();
+  const { mode } = useColorMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState('');
@@ -105,13 +107,15 @@ export default function Login() {
           overflow: 'hidden',
         }}
       >
-        <BrandMark
-          outlined
-          size={560}
-          opacity={0.9}
-          color="background.paper"
-          glyphSx={{ right: -100, bottom: -160 }}
-        />
+        {mode === 'light' && (
+          <BrandMark
+            outlined
+            size={560}
+            opacity={0.9}
+            color="background.paper"
+            glyphSx={{ right: -100, top: -120 }}
+          />
+        )}
       {/* borderRadius stays the user-set 20px, pinned as a string so the new
           theme shape scale (sx numbers multiply by shape.borderRadius) can't
           drift it. */}

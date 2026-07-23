@@ -4,9 +4,9 @@ Projects service: project CRUD with RBAC.
 Routes (relative to this Lambda's Function URL, e.g. /api/projects-service/...):
     GET    /projects       ?status=&manager_id=&department=&date_from=&date_to=
                            &budget_min=&budget_max=&q=
-    POST   /projects        { name, description?, manager_id, department?, start_date?, end_date? }
+    POST   /projects        { name, description?, manager_id, department?, start_date?, end_date?, metadata? }
     GET    /projects/{id}
-    PUT    /projects/{id}    { name?, description?, manager_id?, department?, start_date?, end_date?, status? }
+    PUT    /projects/{id}    { name?, description?, manager_id?, department?, start_date?, end_date?, status?, metadata? }
     DELETE /projects/{id}   -> archive (soft delete)
 
 Rules:
@@ -83,6 +83,18 @@ def _validate_manager(manager_id):
     return None
 
 
+def _validate_metadata(body):
+    """Metadata must be a JSON object when present. Returns (value, error)."""
+    if "metadata" not in body:
+        return None, None
+    metadata = body["metadata"]
+    if metadata is None:
+        return {}, None
+    if not isinstance(metadata, dict):
+        return None, _response(400, {"error": "metadata must be an object"})
+    return metadata, None
+
+
 def _decimal_param(qs, key):
     """Parse an optional numeric query parameter, or None if absent/blank."""
     raw = qs.get(key)
@@ -133,6 +145,10 @@ def _create(event, claims):
     if error:
         return _response(400, {"error": error})
 
+    metadata, err = _validate_metadata(body)
+    if err:
+        return err
+
     project = create_project(
         PG_CONFIG,
         name,
@@ -141,6 +157,7 @@ def _create(event, claims):
         body.get("department"),
         body.get("start_date"),
         body.get("end_date"),
+        metadata or {},
     )
     return _response(201, {"project": project})
 
@@ -183,6 +200,11 @@ def _update(event, claims, project_id):
         if body["status"] not in VALID_STATUSES:
             return _response(400, {"error": f"status must be one of {sorted(VALID_STATUSES)}"})
         fields["status"] = body["status"]
+    metadata, err = _validate_metadata(body)
+    if err:
+        return err
+    if metadata is not None:
+        fields["metadata"] = metadata
 
     updated = update_project(PG_CONFIG, project_id, fields)
     return _response(200, {"project": updated})

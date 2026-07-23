@@ -3,7 +3,7 @@
  * Budget tabs (req/Application_Flow.md §10). The three §15 data states are
  * handled here for the project record itself; each tab panel owns its own.
  */
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -108,6 +108,33 @@ export default function ProjectDetails() {
       <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mt: 1.25 }}>
         Manager: {project.manager_name} {project.department ? `· ${project.department}` : ''}
       </Typography>
+      {/* Spreadsheet-import leftovers (JSONB metadata): columns the importer
+          couldn't map onto a real field, keyed by their original headers.
+          Read-only — they have no edit path in the app. */}
+      {project.metadata && Object.keys(project.metadata).length > 0 && (
+        <Box sx={{ mt: 1 }}>
+          <Typography variant="overline" component="h2" color="text.secondary">
+            Imported fields
+          </Typography>
+          <Box
+            component="dl"
+            sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, m: 0 }}
+          >
+            {Object.entries(project.metadata).map(([key, value]) => (
+              <Fragment key={key}>
+                {/* Same ledger-caps voice as table headers, so imported keys
+                    read as labels, not data. */}
+                <Typography component="dt" variant="overline" color="text.secondary">
+                  {key}
+                </Typography>
+                <Typography component="dd" variant="body2" sx={{ m: 0, alignSelf: 'center' }}>
+                  {typeof value === 'string' || typeof value === 'number' ? value : JSON.stringify(value)}
+                </Typography>
+              </Fragment>
+            ))}
+          </Box>
+        </Box>
+      )}
       {project.description && (
         <Typography variant="body1" sx={{ mt: 1, mb: 2 }}>{project.description}</Typography>
       )}
