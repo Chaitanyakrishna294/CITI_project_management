@@ -247,6 +247,13 @@ export function buildTheme(mode = 'light') {
         // Flat surfaces with a hairline border read better than heavy shadows
         // in dense data screens, and keep contrast predictable.
         root: { backgroundImage: 'none' },
+        // Default-elevation Papers (cards, tables, KPI tiles) are truly flat:
+        // no shadow, hairline edge. Floating surfaces (menus, dialogs) keep
+        // their higher elevations — depth marks what overlays, not what sits.
+        elevation1: {
+          boxShadow: 'none',
+          border: `1px solid ${palette.divider}`,
+        },
       },
     },
     MuiTableCell: {
@@ -259,8 +266,15 @@ export function buildTheme(mode = 'light') {
         // 2px primary underline below the header row carries the structure.
         // (Primary, not the ochre accent: the accent stays reserved for
         // "needs acting on" signals.)
+        // Ledger-caps headers: small, letter-spaced, muted — column names
+        // whisper so the data speaks. DOM text stays as written (CSS-only
+        // transform), so accessible names are unchanged.
         head: {
           fontWeight: 600,
+          fontSize: '0.75rem',
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          color: palette.text.secondary,
           backgroundColor: 'transparent',
           borderBottom: `2px solid ${palette.primary.main}`,
         },

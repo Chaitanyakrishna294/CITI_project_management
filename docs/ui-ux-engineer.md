@@ -82,7 +82,7 @@ Empty states use three purpose-built line illustrations in the same stroke langu
 - **Spacing:** strict 8&nbsp;px grid (`theme.spacing(1)` = 8 px; `sx={{ p: 2 }}` = 16 px).
 - **Radius:** 8 px on everything (`shape.borderRadius`).
 - **Elevation:** flat. Cards/tables are white surfaces with hairline `divider` borders; buttons ship `disableElevation`. Dialogs are the only surfaces with shadow.
-- **Table headers:** transparent, 600 weight, closed by a **2px primary underline** (no gray wash); numeric columns use `font-variant-numeric: tabular-nums`; row hover is a 3px left-edge primary bar, not a row tint.
+- **Table headers:** ledger caps — 12 px / 600, uppercase with 0.06 em tracking, `text.secondary` — closed by a **2px primary underline** (no gray wash); column names whisper so the data speaks. Numeric columns use `font-variant-numeric: tabular-nums`; row hover is a 3px left-edge primary bar, not a row tint.
 - **Table density:** cells pad 10 px vertical / 16 px horizontal (down from MUI's 16/16) — data screens read as a ledger, not a form. Row height stays ≥40 px with body2, holding the 8 px rhythm and touch targets.
 - **Focus:** every interactive element shows a 2 px outline with 2 px offset on `:focus-visible`, riding `--color-focus-ring` per mode; the navy sidebar uses the cream active tone for its focus ring so it stays visible on navy.
 
@@ -93,11 +93,11 @@ Empty states use three purpose-built line illustrations in the same stroke langu
 Implemented in [`frontend/src/components/AppLayout.jsx`](../frontend/src/components/AppLayout.jsx).
 
 ```
-┌────────────────────────────────────────────────────────────────────────────┐
-│ TOP BAR  CITI Project Management  [🔍 global search]    name · role  Logout │
-├──────────┬─────────────────────────────────────────────────────────────────┤
-│ DRAWER   │  MAIN CONTENT (page renders here)                               │
-│ 232 px   │  fluid width, canvas #f1f5f9, 24 px padding                     │
+┌──────────┬─────────────────────────────────────────────────────────────────┐
+│ CITI     │ UTILITY BAR (56 px, canvas tone) [🔍 search]  mode  name  logout │
+│ PROJECT  ├─────────────────────────────────────────────────────────────────┤
+│ MGMT ────│  MAIN CONTENT — centred max-width 1240 column, 32 px gutters    │
+│ 232 px   │                                                                 │
 │          │                                                                 │
 │ Dashboard│                                                                 │
 │ Projects │                                                                 │
@@ -112,8 +112,10 @@ Implemented in [`frontend/src/components/AppLayout.jsx`](../frontend/src/compone
 └──────────┴─────────────────────────────────────────────────────────────────┘
 ```
 
+- **Brand in the sidebar, not the bar:** the navy column runs floor to ceiling and opens with the Fraunces "CITI" wordmark over a letter-spaced caption. The top bar is a 56 px utility strip on the canvas tone (hairline rule below) holding only the pill-shaped global search, the mode toggle and the user block (name over role, icon-only logout) — identity and utility never compete.
+- **Measured content column:** pages render in a centred `max-width: 1240px` column with 32 px desktop gutters — a ledger column, not edge-to-edge sprawl.
 - **Grouped navigation:** items sit under three letter-spaced caption section labels — **Work** (Dashboard, Projects, Deliverables, Resources, Budgets, Reports), **Teams** (Teams, Individuals, Team Insights), **Admin** (Users). A section renders only when the role can see at least one of its items.
-- **Desktop (≥ md):** permanent drawer, 232 px, icon + label items; active item gets a soft navy tint with navy text.
+- **Desktop (≥ md):** permanent drawer, 232 px, icon + label items; active item gets the warm off-white plate with navy text.
 - **Tablet/mobile (< md):** drawer becomes temporary, opened by a hamburger button; user name hides from the top bar; single-column content.
 - **Global search** in the top bar submits to `/search` (searches projects, deliverables, resources).
 - **Role-aware nav:** items with a `roles` array only render for those roles (UX affordance — routes and backend enforce access independently).

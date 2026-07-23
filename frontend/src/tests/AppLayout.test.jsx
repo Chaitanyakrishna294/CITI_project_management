@@ -70,7 +70,8 @@ describe('AppLayout', () => {
 
   it('shows the user name and role when a user is present', () => {
     renderLayout({ user: teamMemberUser });
-    expect(screen.getByText('Jamie Doe · team_member')).toBeInTheDocument();
+    expect(screen.getByText('Jamie Doe')).toBeInTheDocument();
+    expect(screen.getByText('team_member')).toBeInTheDocument();
   });
 
   it('does not show user name/role or logout button when no user is present', () => {

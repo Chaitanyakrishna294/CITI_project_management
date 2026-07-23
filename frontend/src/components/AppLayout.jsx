@@ -12,7 +12,6 @@ import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
@@ -43,8 +42,13 @@ import {
 } from './icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useColorMode } from '../contexts/ColorModeContext';
+import { DISPLAY_FONT } from '../theme';
 
 const DRAWER_WIDTH = 232;
+// Slimmer than MUI's 64px default: the bar holds utilities, not identity.
+const BAR_HEIGHT = 56;
+// Data reads better in a measured column than edge-to-edge on wide monitors.
+const CONTENT_MAX_WIDTH = 1240;
 
 /**
  * Navigation grouped into sections (glow-up brief §4.3): Work is the project
@@ -117,7 +121,35 @@ export default function AppLayout() {
 
   const navigation = (
     <>
-      <Toolbar />
+      {/* The brand lives at the head of the navy column, not in the top bar —
+          the sidebar runs floor to ceiling and owns the app's identity, so
+          the bar above the content can stay a quiet utility strip. */}
+      <Box sx={{ px: 2.5, pt: 3, pb: 2 }}>
+        <Typography
+          component="div"
+          sx={{
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 600,
+            fontSize: 26,
+            lineHeight: 1.1,
+            letterSpacing: '-0.01em',
+            color: 'var(--color-sidebar-active-bg)',
+          }}
+        >
+          CITI
+        </Typography>
+        <Typography
+          component="div"
+          variant="caption"
+          sx={{
+            color: 'var(--color-sidebar-text)',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Project Management
+        </Typography>
+      </Box>
       {/* Solid deep-navy sidebar (glow-up brief v2 §2): the app's silhouette
           comes from this surface, not from a tinted white list. Colours ride
           the --color-sidebar-* custom properties so dark mode retunes them
@@ -217,20 +249,22 @@ export default function AppLayout() {
       >
         Skip to main content
       </Box>
-      {/* Harbor Blue chrome: white bar with a hairline border instead of a
-          filled primary bar — the navy is reserved for the brand and actions. */}
+      {/* Sleek chrome: the bar sits beside the sidebar (not over it), rides
+          the canvas colour with a hairline rule, and carries only utilities —
+          the navy column owns the brand. */}
       <AppBar
         position="fixed"
         color="inherit"
         elevation={0}
         sx={{
-          zIndex: (t) => t.zIndex.drawer + 1,
-          bgcolor: 'background.paper',
+          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          ml: { md: `${DRAWER_WIDTH}px` },
+          bgcolor: 'background.default',
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
       >
-        <Toolbar sx={{ gap: 1 }}>
+        <Toolbar sx={{ gap: 1, minHeight: BAR_HEIGHT, '@media (min-width:0px)': { minHeight: BAR_HEIGHT } }}>
           {!isDesktop && (
             <IconButton
               color="inherit"
@@ -242,20 +276,6 @@ export default function AppLayout() {
             </IconButton>
           )}
 
-          <Typography
-            variant="h6"
-            component="div"
-            sx={{
-              mr: 3,
-              whiteSpace: 'nowrap',
-              display: { xs: 'none', sm: 'block' },
-              color: 'primary.main',
-              fontWeight: 700,
-            }}
-          >
-            CITI Project Management
-          </Typography>
-
           <Box
             component="form"
             role="search"
@@ -263,14 +283,14 @@ export default function AppLayout() {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              bgcolor: 'background.default',
-              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.08) },
+              bgcolor: 'background.paper',
+              '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.06) },
               border: '1px solid',
               borderColor: 'divider',
-              borderRadius: 1,
-              px: 1,
+              borderRadius: 999, // the one rounded silhouette in the chrome
+              px: 1.5,
               flexGrow: 1,
-              maxWidth: 360,
+              maxWidth: 400,
             }}
           >
             <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -297,20 +317,25 @@ export default function AppLayout() {
 
           {user && (
             <>
-              <Typography variant="body2" sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
-                {user.name} · {user.role}
-              </Typography>
-              {isDesktop ? (
-                <Button color="inherit" startIcon={<LogoutIcon />} onClick={handleLogout}>
-                  Logout
-                </Button>
-              ) : (
-                <Tooltip title="Logout">
-                  <IconButton color="inherit" aria-label="Logout" onClick={handleLogout}>
-                    <LogoutIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
+              {/* Name over role, right-aligned — reads as one quiet block
+                  instead of a sentence competing with the page title. */}
+              <Box sx={{ textAlign: 'right', display: { xs: 'none', md: 'block' }, ml: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, lineHeight: 1.2 }}>
+                  {user.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ lineHeight: 1, display: 'block' }}
+                >
+                  {user.role}
+                </Typography>
+              </Box>
+              <Tooltip title="Logout">
+                <IconButton color="inherit" aria-label="Logout" onClick={handleLogout}>
+                  <LogoutIcon />
+                </IconButton>
+              </Tooltip>
             </>
           )}
         </Toolbar>
@@ -355,11 +380,13 @@ export default function AppLayout() {
           // minWidth:0 lets wide tables scroll inside the main column instead of
           // forcing the whole page to scroll sideways on small screens.
           minWidth: 0,
-          p: { xs: 2, md: 3 },
+          p: { xs: 2, md: 4 },
         }}
       >
-        <Toolbar />
-        <Outlet />
+        <Toolbar sx={{ minHeight: BAR_HEIGHT, '@media (min-width:0px)': { minHeight: BAR_HEIGHT } }} />
+        <Box sx={{ maxWidth: CONTENT_MAX_WIDTH, mx: 'auto' }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );
