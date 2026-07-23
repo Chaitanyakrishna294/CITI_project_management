@@ -2,7 +2,7 @@
 
 > [Main Guide](./README.md) | [Validation Guide](./validation.md) | [Full Stack Guide](./full-stack.md) | [Data Engineer Guide](./data-engineer.md) | [System Engineer Guide](./system-engineer.md) | **UI/UX Engineer Guide**
 
-This document captures the **current design system and screen layouts** of the CITI Project Management Platform so a UI/UX designer can audit, critique, and enhance it. Everything here reflects what is actually implemented in code today — file paths are given so every token and pattern can be traced to its source.
+This document captures the **current design system and screen layouts** of the HEX Project Management Platform so a UI/UX designer can audit, critique, and enhance it. Everything here reflects what is actually implemented in code today — file paths are given so every token and pattern can be traced to its source.
 
 ---
 
@@ -55,7 +55,7 @@ The 2026-07 **v2 glow-up** added a shape layer on top of the tokens (custom silh
 
 **Chart palette** (`CHART_COLORS`): `#2255b0`, `#15803d`, `#c2410c`, `#7c3aed` — assigned in fixed order, never cycled; a fifth series folds into "Other". The palette was validated for color-vision deficiency and surface contrast (rationale documented inline in theme.js); charts additionally carry direct labels, 2&nbsp;px gaps between fills, and a data-table fallback. **A designer changing these colors must re-validate contrast and CVD separation.**
 
-**Dark mode.** The theme is built per mode by `buildTheme(mode)` in theme.js; a toggle in the top bar persists the choice (`localStorage: citi_color_mode`), first visits follow the OS `prefers-color-scheme`, and the `data-theme` attribute on `<html>` flips the CSS custom properties in step. Dark palette (brief v2 §3.1): canvas `#0b1220`, paper `#131c2e`, divider `#1e293b`, text `#e2e8f0`/`#94a3b8`, primary `#6d93e0` (6.2:1 on canvas; contained buttons flip to dark text), semantic hues lightened with dark contrast text (`#4ade80`/`#fbbf24`/`#f87171`/`#38bdf8`). **Status and chart colors have dark-validated counterparts** — `STATUS_COLORS_DARK` (in_progress `#6d93e0`, blocked `#f87171`) and `CHART_COLORS_DARK` (slot 0 `#6d93e0`, slot 3 `#a78bfa`) — consumed via the `useStatusColors()` / `useChartColors()` hooks, never by picking a set by hand. All dark pairings were computed against WCAG in 2026-07: every text pairing ≥4.5:1, every mark ≥3:1 on the paper tone (results annotated in theme.js). The focus ring rides `--color-focus-ring` (`#194391` light / `#8fabf0` dark).
+**Dark mode.** The theme is built per mode by `buildTheme(mode)` in theme.js; a toggle in the top bar persists the choice (`localStorage: hex_color_mode`), first visits follow the OS `prefers-color-scheme`, and the `data-theme` attribute on `<html>` flips the CSS custom properties in step. Dark palette (brief v2 §3.1): canvas `#0b1220`, paper `#131c2e`, divider `#1e293b`, text `#e2e8f0`/`#94a3b8`, primary `#6d93e0` (6.2:1 on canvas; contained buttons flip to dark text), semantic hues lightened with dark contrast text (`#4ade80`/`#fbbf24`/`#f87171`/`#38bdf8`). **Status and chart colors have dark-validated counterparts** — `STATUS_COLORS_DARK` (in_progress `#6d93e0`, blocked `#f87171`) and `CHART_COLORS_DARK` (slot 0 `#6d93e0`, slot 3 `#a78bfa`) — consumed via the `useStatusColors()` / `useChartColors()` hooks, never by picking a set by hand. All dark pairings were computed against WCAG in 2026-07: every text pairing ≥4.5:1, every mark ≥3:1 on the paper tone (results annotated in theme.js). The focus ring rides `--color-focus-ring` (`#194391` light / `#8fabf0` dark).
 
 ### 2.2 Typography
 
@@ -94,7 +94,7 @@ Implemented in [`frontend/src/components/AppLayout.jsx`](../frontend/src/compone
 
 ```
 ┌──────────┬─────────────────────────────────────────────────────────────────┐
-│ CITI     │ UTILITY BAR (56 px, canvas tone) [🔍 search]  mode  name  logout │
+│ HEX     │ UTILITY BAR (56 px, canvas tone) [🔍 search]  mode  name  logout │
 │ PROJECT  ├─────────────────────────────────────────────────────────────────┤
 │ MGMT ────│  MAIN CONTENT — centred max-width 1240 column, 32 px gutters    │
 │ 232 px   │                                                                 │
@@ -112,7 +112,7 @@ Implemented in [`frontend/src/components/AppLayout.jsx`](../frontend/src/compone
 └──────────┴─────────────────────────────────────────────────────────────────┘
 ```
 
-- **Brand in the sidebar, not the bar:** the navy column runs floor to ceiling and opens with the Fraunces "CITI" wordmark over a letter-spaced caption. The top bar is a 56 px utility strip on the canvas tone (hairline rule below) holding only the pill-shaped global search, the mode toggle and the user block (name over role, icon-only logout) — identity and utility never compete.
+- **Brand in the sidebar, not the bar:** the navy column runs floor to ceiling and opens with the Fraunces "HEX" wordmark over a letter-spaced caption. The top bar is a 56 px utility strip on the canvas tone (hairline rule below) holding only the pill-shaped global search, the mode toggle and the user block (name over role, icon-only logout) — identity and utility never compete.
 - **Measured content column:** pages render in a centred `max-width: 1240px` column with 32 px desktop gutters — a ledger column, not edge-to-edge sprawl.
 - **Grouped navigation:** items sit under three letter-spaced caption section labels — **Work** (Dashboard, Projects, Deliverables, Resources, Budgets, Reports), **Teams** (Teams, Individuals, Team Insights), **Admin** (Users). A section renders only when the role can see at least one of its items.
 - **Desktop (≥ md):** permanent drawer, 232 px, icon + label items; active item gets the warm off-white plate with navy text.

@@ -1,4 +1,4 @@
-# UI Glow-Up Brief — CITI Project Management Platform
+# UI Glow-Up Brief — HEX Project Management Platform
 
 > **How to use:** paste this entire document into a Claude session that has the 21st.dev plugin connected and (ideally) this repository open. It is self-contained. If the session has the repo, follow §7–§9 to implement; if it only has 21st.dev, deliver §6 as designs/components and hand them back.
 
@@ -14,7 +14,7 @@ A role-based internal management platform (Material UI, React) covering project 
 
 ## 2. Design direction — read this before generating anything
 
-Target aesthetic: **institutional, credible, financial-services-grade** — the register of Citi, Stripe Dashboard, Linear, or Mercury. Not a startup landing page. Not a dashboard template.
+Target aesthetic: **institutional, credible, financial-services-grade** — the register of Hex, Stripe Dashboard, Linear, or Mercury. Not a startup landing page. Not a dashboard template.
 
 **Do:**
 - Deep navy / slate palette, generous whitespace, flat surfaces, hairline borders instead of shadows for structure
@@ -117,7 +117,7 @@ For each screen, briefly note *why* each change was made (tie back to §4) so th
 
 ## 7. Repository context (for sessions with the repo open)
 
-Repo root: `/home/1695f566/CITI`. Frontend: `frontend/` (Vite + React + MUI). Read `CLAUDE.md` at the repo root first — it carries binding conventions.
+Repo root: `/home/1695f566/HEX`. Frontend: `frontend/` (Vite + React + MUI). Read `CLAUDE.md` at the repo root first — it carries binding conventions.
 
 Key files:
 
@@ -146,7 +146,7 @@ cd frontend && npm run lint    # must stay at zero errors
 cd frontend && npm test        # full Vitest suite must pass (287+ tests)
 ```
 
-Visual verification: the dev stack runs Vite on port 3000 with a LocalStack backend already up. Log in with `admin@citi.com` / `Workshop123!`. If the running backend is unavailable, start a second Vite against a mock API instead (`VITE_API_URL=http://localhost:<mock-port> npm run dev -- --port 3002 --strictPort`) rather than touching `frontend/.env.local`, which the port-3000 server watches.
+Visual verification: the dev stack runs Vite on port 3000 with a LocalStack backend already up. Log in with `admin@hex.com` / `Workshop123!`. If the running backend is unavailable, start a second Vite against a mock API instead (`VITE_API_URL=http://localhost:<mock-port> npm run dev -- --port 3002 --strictPort`) rather than touching `frontend/.env.local`, which the port-3000 server watches.
 
 ## 9. Working method
 

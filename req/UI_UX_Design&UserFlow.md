@@ -8,7 +8,7 @@
 
 ## Purpose
 
-This document defines the user interface (UI), user experience (UX), navigation patterns, design standards, and interaction behavior for the CITI Project Management Platform.
+This document defines the user interface (UI), user experience (UX), navigation patterns, design standards, and interaction behavior for the HEX Project Management Platform.
 
 The objective is to provide a consistent, intuitive, and responsive user experience while ensuring accessibility, usability, and maintainability across all application modules.
 

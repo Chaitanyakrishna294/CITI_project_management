@@ -15,7 +15,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { buildTheme } from '../theme';
 
-const STORAGE_KEY = 'citi_color_mode';
+const STORAGE_KEY = 'hex_color_mode';
 
 const ColorModeContext = createContext({ mode: 'light', toggleMode: () => {} });
 

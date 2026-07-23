@@ -8,7 +8,7 @@
 | ----------- | ---------------------------------------------- |
 | Document    | Technical Requirements & Architecture Document |
 | Version     | 1.0                                            |
-| Product     | CITI Project Management Platform               |
+| Product     | HEX Project Management Platform               |
 | Status      | Draft                                          |
 | Prepared By | Engineering Team                               |
 
@@ -18,7 +18,7 @@
 
 ## Objective
 
-The Technical Requirements & Architecture Document (TRD) defines the technical foundation, architectural decisions, technology stack, and engineering standards for the CITI Project Management Platform.
+The Technical Requirements & Architecture Document (TRD) defines the technical foundation, architectural decisions, technology stack, and engineering standards for the HEX Project Management Platform.
 
 The purpose of this document is to provide developers, architects, testers, and system administrators with a shared understanding of how the application will be designed, implemented, secured, and deployed.
 
@@ -28,7 +28,7 @@ This document ensures consistency throughout the software development lifecycle 
 
 # 3. System Overview
 
-The CITI Project Management Platform is a centralized web-based application designed to streamline project planning, execution, monitoring, and reporting across multiple departments.
+The HEX Project Management Platform is a centralized web-based application designed to streamline project planning, execution, monitoring, and reporting across multiple departments.
 
 The platform enables project managers to manage projects, assign resources, monitor deliverables, track budgets, and provide real-time project visibility to executives and stakeholders.
 

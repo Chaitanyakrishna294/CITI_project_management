@@ -1,6 +1,6 @@
-# Contributing to Citi
+# Contributing to Hex
 
-Welcome to Citi's Open Source contribution guidelines. We aim to provide simple and easy-to-follow documentation, but suggestions and improvements are always welcome.
+Welcome to Hex's Open Source contribution guidelines. We aim to provide simple and easy-to-follow documentation, but suggestions and improvements are always welcome.
 
 ## ⚡ Get started
 
@@ -49,7 +49,7 @@ $ git clone https://github.com/YOUR_GITHUB_USRERNAME/REPO_NAME.git
 
 ##  ⚖️ Code of Conduct
 
-Citi has adopted a [Code of Conduct](https://github.com/Citi/.github/blob/main/CODE_OF_CONDUCT.md) adapted from the [Contributor Covenant](https://www.contributor-covenant.org/) (v2.0). To report any inappropriate behavior or for any questions related to our Code of Conduct, please contact opensource@citi.com.
+Hex has adopted a [Code of Conduct](https://github.com/Hex/.github/blob/main/CODE_OF_CONDUCT.md) adapted from the [Contributor Covenant](https://www.contributor-covenant.org/) (v2.0). To report any inappropriate behavior or for any questions related to our Code of Conduct, please contact opensource@hex.com.
 
 ##  ✍️ DCO (Developer Certificate of Origin)
 
@@ -82,6 +82,6 @@ Signed-off-by: Jane Doe <jane.doe@example.com> // Waheey! 🎉 You agreed to the
 
 ## 🤝 Responsible Vulnerability Disclosure
 
-If you discover a vulnerability in a Citi repository, please e-mail opensource@citi.com.
+If you discover a vulnerability in a Hex repository, please e-mail opensource@hex.com.
 
-Thank you for improving the security of Citi and open source!
+Thank you for improving the security of Hex and open source!

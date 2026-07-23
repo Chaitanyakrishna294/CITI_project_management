@@ -41,7 +41,7 @@ describe('AuthContext / AuthProvider + useAuth', () => {
   });
 
   it('with token present, fetchCurrentUser is called and on success user is set + loading becomes false', async () => {
-    localStorage.setItem('citi_token', 'tok123');
+    localStorage.setItem('hex_token', 'tok123');
     authService.fetchCurrentUser.mockResolvedValue({ user: { id: 1, name: 'Ann', role: 'admin' } });
 
     render(
@@ -56,7 +56,7 @@ describe('AuthContext / AuthProvider + useAuth', () => {
   });
 
   it('with token present but fetchCurrentUser rejects, token is removed and user stays null', async () => {
-    localStorage.setItem('citi_token', 'tok123');
+    localStorage.setItem('hex_token', 'tok123');
     authService.fetchCurrentUser.mockRejectedValue(new Error('unauthorized'));
 
     render(
@@ -67,7 +67,7 @@ describe('AuthContext / AuthProvider + useAuth', () => {
 
     await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
     expect(screen.getByTestId('user-name').textContent).toBe('');
-    expect(localStorage.getItem('citi_token')).toBeNull();
+    expect(localStorage.getItem('hex_token')).toBeNull();
   });
 
   it('login stores returned token in localStorage and sets user', async () => {
@@ -84,7 +84,7 @@ describe('AuthContext / AuthProvider + useAuth', () => {
     await userEvent.click(screen.getByText('login'));
 
     await waitFor(() => expect(screen.getByTestId('user-name').textContent).toBe('Bob'));
-    expect(localStorage.getItem('citi_token')).toBe('new-token');
+    expect(localStorage.getItem('hex_token')).toBe('new-token');
   });
 
   // NOTE: AuthContext.logout() awaits authService.logout() in a try/finally, so the
@@ -112,7 +112,7 @@ describe('AuthContext / AuthProvider + useAuth', () => {
     await userEvent.click(screen.getByText('logout'));
 
     await waitFor(() => expect(screen.getByTestId('user-name').textContent).toBe(''));
-    expect(localStorage.getItem('citi_token')).toBeNull();
+    expect(localStorage.getItem('hex_token')).toBeNull();
   });
 
   it('useAuth throws when called outside an AuthProvider', () => {

@@ -39,7 +39,7 @@ describe('App routing', () => {
   });
 
   it('redirects an authenticated non-admin visit to /users to /dashboard', async () => {
-    localStorage.setItem('citi_token', 'tok');
+    localStorage.setItem('hex_token', 'tok');
     authService.fetchCurrentUser.mockResolvedValue({ user: { id: 1, name: 'Ann', role: 'viewer' } });
     setUrl('/users');
 
@@ -49,7 +49,7 @@ describe('App routing', () => {
   });
 
   it('keeps an authenticated admin visit to /users on /users', async () => {
-    localStorage.setItem('citi_token', 'tok');
+    localStorage.setItem('hex_token', 'tok');
     authService.fetchCurrentUser.mockResolvedValue({ user: { id: 1, name: 'Ann', role: 'admin' } });
     setUrl('/users');
 
@@ -59,7 +59,7 @@ describe('App routing', () => {
   });
 
   it('redirects / to /dashboard', async () => {
-    localStorage.setItem('citi_token', 'tok');
+    localStorage.setItem('hex_token', 'tok');
     authService.fetchCurrentUser.mockResolvedValue({ user: { id: 1, name: 'Ann', role: 'admin' } });
     setUrl('/');
 
@@ -69,7 +69,7 @@ describe('App routing', () => {
   });
 
   it('redirects an unknown path to /dashboard', async () => {
-    localStorage.setItem('citi_token', 'tok');
+    localStorage.setItem('hex_token', 'tok');
     authService.fetchCurrentUser.mockResolvedValue({ user: { id: 1, name: 'Ann', role: 'admin' } });
     setUrl('/some/unknown/path');
 

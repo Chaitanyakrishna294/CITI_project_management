@@ -7,7 +7,7 @@
 
 ## Purpose
 
-This document defines the complete functional flow of the CITI Project Management Platform. It describes how users navigate through the application, interact with various modules, and complete business processes. The application flow serves as a blueprint for developers, designers, testers, and stakeholders by illustrating the sequence of user interactions, system responses, and business logic.
+This document defines the complete functional flow of the HEX Project Management Platform. It describes how users navigate through the application, interact with various modules, and complete business processes. The application flow serves as a blueprint for developers, designers, testers, and stakeholders by illustrating the sequence of user interactions, system responses, and business logic.
 
 ---
 

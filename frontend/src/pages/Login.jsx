@@ -66,7 +66,7 @@ export default function Login() {
               color: 'var(--color-sidebar-active-bg)',
             }}
           >
-            CITI
+            HEX
           </Typography>
           <Typography
             component="div"
@@ -108,7 +108,7 @@ export default function Login() {
           Sign in
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          CITI Project Management
+          HEX Project Management
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>

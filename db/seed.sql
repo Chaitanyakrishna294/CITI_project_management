@@ -10,14 +10,14 @@
 -- Re-runnable: every statement is guarded, so applying it twice is a no-op.
 --
 -- Demo logins — all accounts share the password below.
---     admin@citi.com      Admin
---     priya@citi.com      Project Manager
---     marco@citi.com      Project Manager
---     sam@citi.com        Team Member
---     dana@citi.com       Team Member
---     lee@citi.com        Team Member
---     fin@citi.com        Finance Team
---     view@citi.com       Viewer
+--     admin@hex.com      Admin
+--     priya@hex.com      Project Manager
+--     marco@hex.com      Project Manager
+--     sam@hex.com        Team Member
+--     dana@hex.com       Team Member
+--     lee@hex.com        Team Member
+--     fin@hex.com        Finance Team
+--     view@hex.com       Viewer
 --
 -- Password for every seeded account: Workshop123!
 -- These are development credentials only. Never load this file into a shared
@@ -28,14 +28,14 @@
 -- ---------------------------------------------------------------------------
 
 INSERT INTO users (name, email, password_hash, role) VALUES
-    ('citi Admin',   'admin@citi.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'admin'),
-    ('Priya Raman',  'priya@citi.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'project_manager'),
-    ('Marco Silva',  'marco@citi.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'project_manager'),
-    ('Sam Okafor',   'sam@citi.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
-    ('Dana Whitley', 'dana@citi.com',  '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
-    ('Lee Nakamura', 'lee@citi.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
-    ('Fin Adeyemi',  'fin@citi.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'finance'),
-    ('Val Ortiz',    'view@citi.com',  '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'viewer')
+    ('hex Admin',   'admin@hex.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'admin'),
+    ('Priya Raman',  'priya@hex.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'project_manager'),
+    ('Marco Silva',  'marco@hex.com', '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'project_manager'),
+    ('Sam Okafor',   'sam@hex.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
+    ('Dana Whitley', 'dana@hex.com',  '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
+    ('Lee Nakamura', 'lee@hex.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'team_member'),
+    ('Fin Adeyemi',  'fin@hex.com',   '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'finance'),
+    ('Val Ortiz',    'view@hex.com',  '$2b$12$SQnHSv7mw4Wn/OF7RZar.ujA8H2kt0Aib/7mcehXoBuw6Ag7LxOcG', 'viewer')
 ON CONFLICT (email) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -49,22 +49,22 @@ SELECT v.name, v.description, v.status::project_status, u.id, v.department, v.st
 FROM (VALUES
     ('Customer Portal Redesign',
      'Rebuild the self-service portal on the new design system.',
-     'active', 'priya@citi.com', 'Engineering', DATE '2026-03-02', DATE '2026-09-30'),
+     'active', 'priya@hex.com', 'Engineering', DATE '2026-03-02', DATE '2026-09-30'),
     ('Warehouse Automation',
      'Automate inbound receiving across the three regional warehouses.',
-     'active', 'marco@citi.com', 'Operations', DATE '2026-05-11', DATE '2026-12-18'),
+     'active', 'marco@hex.com', 'Operations', DATE '2026-05-11', DATE '2026-12-18'),
     ('Partner Portal',
      'Self-service onboarding for channel partners. Slipped past its planned close.',
-     'active', 'priya@citi.com', 'Engineering', DATE '2026-01-05', DATE '2026-06-30'),
+     'active', 'priya@hex.com', 'Engineering', DATE '2026-01-05', DATE '2026-06-30'),
     ('Payroll Migration',
      'Move payroll reporting onto the shared finance data warehouse.',
-     'delayed', 'marco@citi.com', 'Finance', DATE '2026-02-16', DATE '2026-08-31'),
+     'delayed', 'marco@hex.com', 'Finance', DATE '2026-02-16', DATE '2026-08-31'),
     ('Mobile Field App',
      'Offline-capable inspection app for field engineers.',
-     'completed', 'priya@citi.com', 'Engineering', DATE '2025-09-01', DATE '2026-02-27'),
+     'completed', 'priya@hex.com', 'Engineering', DATE '2025-09-01', DATE '2026-02-27'),
     ('Legacy CRM Sunset',
      'Decommission the legacy CRM. Archived after the scope moved to IT.',
-     'archived', 'marco@citi.com', 'IT', DATE '2025-06-02', DATE '2025-12-19')
+     'archived', 'marco@hex.com', 'IT', DATE '2025-06-02', DATE '2025-12-19')
 ) AS v(name, description, status, manager_email, department, start_date, end_date)
 JOIN users u ON u.email = v.manager_email
 WHERE NOT EXISTS (SELECT 1 FROM projects p WHERE p.name = v.name);
@@ -77,20 +77,20 @@ WHERE NOT EXISTS (SELECT 1 FROM projects p WHERE p.name = v.name);
 INSERT INTO deliverables (project_id, title, description, owner_id, status, due_date)
 SELECT p.id, v.title, v.description, o.id, v.status::deliverable_status, v.due_date
 FROM (VALUES
-    ('Customer Portal Redesign', 'Design system audit',        'Catalogue every component the portal needs.',     'sam@citi.com',  'completed',   DATE '2026-04-10'),
-    ('Customer Portal Redesign', 'Account dashboard rebuild',  'Rebuild the landing dashboard on the new kit.',   'dana@citi.com', 'in_progress', DATE '2026-08-14'),
-    ('Customer Portal Redesign', 'Billing history screen',     'Paginated invoice history with export.',          'sam@citi.com',  'not_started', DATE '2026-09-11'),
-    ('Customer Portal Redesign', 'Accessibility remediation',  'Close the WCAG findings from the design audit.',  'lee@citi.com',  'blocked',     DATE '2026-07-31'),
-    ('Warehouse Automation',     'Receiving hardware spec',    'Scanner and printer specification per site.',     'lee@citi.com',  'completed',   DATE '2026-06-05'),
-    ('Warehouse Automation',     'Inbound API integration',    'Wire the WMS inbound API to the scanners.',       'dana@citi.com', 'in_progress', DATE '2026-08-28'),
-    ('Warehouse Automation',     'Site rollout playbook',      'Runbook for the per-site cutover.',               'sam@citi.com',  'not_started', DATE '2026-10-16'),
-    ('Partner Portal',           'Partner onboarding flow',    'Self-service signup and verification.',           'dana@citi.com', 'in_progress', DATE '2026-06-12'),
-    ('Partner Portal',           'Commission statements',      'Monthly partner commission statements.',          'lee@citi.com',  'blocked',     DATE '2026-07-03'),
-    ('Payroll Migration',        'Data mapping workbook',      'Map legacy payroll fields to the warehouse.',     'sam@citi.com',  'completed',   DATE '2026-05-22'),
-    ('Payroll Migration',        'Historical load validation', 'Reconcile three years of loaded history.',        'lee@citi.com',  'blocked',     DATE '2026-07-10'),
-    ('Payroll Migration',        'Finance sign-off pack',      'Evidence pack for the finance controller.',       'dana@citi.com', 'not_started', DATE '2026-09-04'),
-    ('Mobile Field App',         'Offline sync engine',        'Conflict-free sync for offline inspections.',     'dana@citi.com', 'completed',   DATE '2026-01-16'),
-    ('Mobile Field App',         'App store release',          'Ship 1.0 to both app stores.',                    'sam@citi.com',  'completed',   DATE '2026-02-20')
+    ('Customer Portal Redesign', 'Design system audit',        'Catalogue every component the portal needs.',     'sam@hex.com',  'completed',   DATE '2026-04-10'),
+    ('Customer Portal Redesign', 'Account dashboard rebuild',  'Rebuild the landing dashboard on the new kit.',   'dana@hex.com', 'in_progress', DATE '2026-08-14'),
+    ('Customer Portal Redesign', 'Billing history screen',     'Paginated invoice history with export.',          'sam@hex.com',  'not_started', DATE '2026-09-11'),
+    ('Customer Portal Redesign', 'Accessibility remediation',  'Close the WCAG findings from the design audit.',  'lee@hex.com',  'blocked',     DATE '2026-07-31'),
+    ('Warehouse Automation',     'Receiving hardware spec',    'Scanner and printer specification per site.',     'lee@hex.com',  'completed',   DATE '2026-06-05'),
+    ('Warehouse Automation',     'Inbound API integration',    'Wire the WMS inbound API to the scanners.',       'dana@hex.com', 'in_progress', DATE '2026-08-28'),
+    ('Warehouse Automation',     'Site rollout playbook',      'Runbook for the per-site cutover.',               'sam@hex.com',  'not_started', DATE '2026-10-16'),
+    ('Partner Portal',           'Partner onboarding flow',    'Self-service signup and verification.',           'dana@hex.com', 'in_progress', DATE '2026-06-12'),
+    ('Partner Portal',           'Commission statements',      'Monthly partner commission statements.',          'lee@hex.com',  'blocked',     DATE '2026-07-03'),
+    ('Payroll Migration',        'Data mapping workbook',      'Map legacy payroll fields to the warehouse.',     'sam@hex.com',  'completed',   DATE '2026-05-22'),
+    ('Payroll Migration',        'Historical load validation', 'Reconcile three years of loaded history.',        'lee@hex.com',  'blocked',     DATE '2026-07-10'),
+    ('Payroll Migration',        'Finance sign-off pack',      'Evidence pack for the finance controller.',       'dana@hex.com', 'not_started', DATE '2026-09-04'),
+    ('Mobile Field App',         'Offline sync engine',        'Conflict-free sync for offline inspections.',     'dana@hex.com', 'completed',   DATE '2026-01-16'),
+    ('Mobile Field App',         'App store release',          'Ship 1.0 to both app stores.',                    'sam@hex.com',  'completed',   DATE '2026-02-20')
 ) AS v(project_name, title, description, owner_email, status, due_date)
 JOIN projects p ON p.name = v.project_name
 JOIN users o ON o.email = v.owner_email
@@ -125,11 +125,11 @@ ON CONFLICT (deliverable_id, depends_on_deliverable_id) DO NOTHING;
 INSERT INTO resources (user_id, title, department, weekly_capacity)
 SELECT u.id, v.title, v.department, v.weekly_capacity
 FROM (VALUES
-    ('sam@citi.com',   'Senior Engineer',   'Engineering', 100.00),
-    ('dana@citi.com',  'Staff Engineer',    'Engineering', 100.00),
-    ('lee@citi.com',   'Systems Analyst',   'Operations',   80.00),
-    ('priya@citi.com', 'Delivery Manager',  'Engineering', 100.00),
-    ('marco@citi.com', 'Programme Manager', 'Operations',  100.00)
+    ('sam@hex.com',   'Senior Engineer',   'Engineering', 100.00),
+    ('dana@hex.com',  'Staff Engineer',    'Engineering', 100.00),
+    ('lee@hex.com',   'Systems Analyst',   'Operations',   80.00),
+    ('priya@hex.com', 'Delivery Manager',  'Engineering', 100.00),
+    ('marco@hex.com', 'Programme Manager', 'Operations',  100.00)
 ) AS v(email, title, department, weekly_capacity)
 JOIN users u ON u.email = v.email
 WHERE NOT EXISTS (SELECT 1 FROM resources r WHERE r.user_id = u.id);
@@ -142,14 +142,14 @@ WHERE NOT EXISTS (SELECT 1 FROM resources r WHERE r.user_id = u.id);
 INSERT INTO resource_allocations (resource_id, project_id, allocation_pct, start_date, end_date)
 SELECT r.id, p.id, v.allocation_pct, v.start_date, v.end_date
 FROM (VALUES
-    ('sam@citi.com',   'Customer Portal Redesign', 60.00, DATE '2026-03-02', DATE '2026-09-30'),
-    ('sam@citi.com',   'Payroll Migration',        30.00, DATE '2026-02-16', DATE '2026-08-31'),
-    ('dana@citi.com',  'Customer Portal Redesign', 50.00, DATE '2026-03-02', DATE '2026-09-30'),
-    ('dana@citi.com',  'Warehouse Automation',     40.00, DATE '2026-05-11', DATE '2026-12-18'),
-    ('lee@citi.com',   'Warehouse Automation',     50.00, DATE '2026-05-11', DATE '2026-12-18'),
-    ('lee@citi.com',   'Partner Portal',           40.00, DATE '2026-01-05', DATE '2026-06-30'),
-    ('priya@citi.com', 'Customer Portal Redesign', 40.00, DATE '2026-03-02', DATE '2026-09-30'),
-    ('marco@citi.com', 'Warehouse Automation',     45.00, DATE '2026-05-11', DATE '2026-12-18')
+    ('sam@hex.com',   'Customer Portal Redesign', 60.00, DATE '2026-03-02', DATE '2026-09-30'),
+    ('sam@hex.com',   'Payroll Migration',        30.00, DATE '2026-02-16', DATE '2026-08-31'),
+    ('dana@hex.com',  'Customer Portal Redesign', 50.00, DATE '2026-03-02', DATE '2026-09-30'),
+    ('dana@hex.com',  'Warehouse Automation',     40.00, DATE '2026-05-11', DATE '2026-12-18'),
+    ('lee@hex.com',   'Warehouse Automation',     50.00, DATE '2026-05-11', DATE '2026-12-18'),
+    ('lee@hex.com',   'Partner Portal',           40.00, DATE '2026-01-05', DATE '2026-06-30'),
+    ('priya@hex.com', 'Customer Portal Redesign', 40.00, DATE '2026-03-02', DATE '2026-09-30'),
+    ('marco@hex.com', 'Warehouse Automation',     45.00, DATE '2026-05-11', DATE '2026-12-18')
 ) AS v(email, project_name, allocation_pct, start_date, end_date)
 JOIN users u ON u.email = v.email
 JOIN resources r ON r.user_id = u.id
@@ -182,24 +182,24 @@ ON CONFLICT (project_id) DO NOTHING;
 -- ---------------------------------------------------------------------------
 
 INSERT INTO individuals (name, email, location, is_direct_staff, is_org_leader) VALUES
-    ('Olive Grant',   'olive.grant@citi.com',   'New York',  TRUE,  TRUE),
-    ('Hector Bloom',  'hector.bloom@citi.com',  'Austin',    TRUE,  FALSE),
-    ('Lena Frost',    'lena.frost@citi.com',    'London',    TRUE,  FALSE),
-    ('Ravi Chandra',  'ravi.chandra@citi.com',  'Bengaluru', TRUE,  FALSE),
-    ('Mia Torres',    'mia.torres@citi.com',    'Austin',    TRUE,  FALSE),
-    ('Jonas Weber',   'jonas.weber@citi.com',   'Berlin',    FALSE, FALSE),
-    ('Aiko Tanaka',   'aiko.tanaka@citi.com',   'Tokyo',     FALSE, FALSE),
-    ('Peter Novak',   'peter.novak@citi.com',   'Berlin',    TRUE,  FALSE),
-    ('Sara Lindqvist','sara.lindqvist@citi.com','Berlin',    FALSE, FALSE),
-    ('Tom Reilly',    'tom.reilly@citi.com',    'Austin',    TRUE,  FALSE)
+    ('Olive Grant',   'olive.grant@hex.com',   'New York',  TRUE,  TRUE),
+    ('Hector Bloom',  'hector.bloom@hex.com',  'Austin',    TRUE,  FALSE),
+    ('Lena Frost',    'lena.frost@hex.com',    'London',    TRUE,  FALSE),
+    ('Ravi Chandra',  'ravi.chandra@hex.com',  'Bengaluru', TRUE,  FALSE),
+    ('Mia Torres',    'mia.torres@hex.com',    'Austin',    TRUE,  FALSE),
+    ('Jonas Weber',   'jonas.weber@hex.com',   'Berlin',    FALSE, FALSE),
+    ('Aiko Tanaka',   'aiko.tanaka@hex.com',   'Tokyo',     FALSE, FALSE),
+    ('Peter Novak',   'peter.novak@hex.com',   'Berlin',    TRUE,  FALSE),
+    ('Sara Lindqvist','sara.lindqvist@hex.com','Berlin',    FALSE, FALSE),
+    ('Tom Reilly',    'tom.reilly@hex.com',    'Austin',    TRUE,  FALSE)
 ON CONFLICT (email) DO NOTHING;
 
 INSERT INTO teams (name, location, leader_id, reports_to_id)
 SELECT v.name, v.location, l.id, r.id
 FROM (VALUES
-    ('Atlas',  'Austin', 'lena.frost@citi.com',   'olive.grant@citi.com'),
-    ('Nimbus', 'Berlin', 'jonas.weber@citi.com',  'hector.bloom@citi.com'),
-    ('Quartz', 'Austin', 'hector.bloom@citi.com', 'lena.frost@citi.com')
+    ('Atlas',  'Austin', 'lena.frost@hex.com',   'olive.grant@hex.com'),
+    ('Nimbus', 'Berlin', 'jonas.weber@hex.com',  'hector.bloom@hex.com'),
+    ('Quartz', 'Austin', 'hector.bloom@hex.com', 'lena.frost@hex.com')
 ) AS v(name, location, leader_email, reports_to_email)
 JOIN individuals l ON l.email = v.leader_email
 JOIN individuals r ON r.email = v.reports_to_email
@@ -208,16 +208,16 @@ ON CONFLICT (name) DO NOTHING;
 INSERT INTO team_members (team_id, individual_id)
 SELECT t.id, i.id
 FROM (VALUES
-    ('Atlas',  'mia.torres@citi.com'),
-    ('Atlas',  'tom.reilly@citi.com'),
-    ('Atlas',  'ravi.chandra@citi.com'),
-    ('Nimbus', 'jonas.weber@citi.com'),
-    ('Nimbus', 'peter.novak@citi.com'),
-    ('Nimbus', 'sara.lindqvist@citi.com'),
-    ('Nimbus', 'aiko.tanaka@citi.com'),
-    ('Quartz', 'hector.bloom@citi.com'),
-    ('Quartz', 'mia.torres@citi.com'),
-    ('Quartz', 'tom.reilly@citi.com')
+    ('Atlas',  'mia.torres@hex.com'),
+    ('Atlas',  'tom.reilly@hex.com'),
+    ('Atlas',  'ravi.chandra@hex.com'),
+    ('Nimbus', 'jonas.weber@hex.com'),
+    ('Nimbus', 'peter.novak@hex.com'),
+    ('Nimbus', 'sara.lindqvist@hex.com'),
+    ('Nimbus', 'aiko.tanaka@hex.com'),
+    ('Quartz', 'hector.bloom@hex.com'),
+    ('Quartz', 'mia.torres@hex.com'),
+    ('Quartz', 'tom.reilly@hex.com')
 ) AS v(team_name, email)
 JOIN teams t ON t.name = v.team_name
 JOIN individuals i ON i.email = v.email

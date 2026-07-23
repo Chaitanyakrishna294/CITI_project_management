@@ -34,7 +34,7 @@ describe('apiClient / apiRequest', () => {
   });
 
   it('includes Authorization header with token when auth is true and token exists', async () => {
-    localStorage.setItem('citi_token', 'abc123');
+    localStorage.setItem('hex_token', 'abc123');
     mockFetchOnce({ json: {} });
     await apiRequest('users-service', '/users', { auth: true });
     const [, options] = global.fetch.mock.calls[0];
@@ -42,7 +42,7 @@ describe('apiClient / apiRequest', () => {
   });
 
   it('omits Authorization header when auth is false', async () => {
-    localStorage.setItem('citi_token', 'abc123');
+    localStorage.setItem('hex_token', 'abc123');
     mockFetchOnce({ json: {} });
     await apiRequest('auth-service', '/login', { auth: false });
     const [, options] = global.fetch.mock.calls[0];

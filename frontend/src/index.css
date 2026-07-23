@@ -1,5 +1,5 @@
 /*
- * Global stylesheet for the CITI Project Management Platform.
+ * Global stylesheet for the HEX Project Management Platform.
  *
  * Design tokens live here as CSS custom properties (glow-up brief v2 §3) in
  * light and dark sets; src/theme.js mirrors them into MUI's palette so both

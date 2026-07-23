@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function getToken() {
-  return localStorage.getItem('citi_token');
+  return localStorage.getItem('hex_token');
 }
 
 export async function apiRequest(service, path, { method = 'GET', body, auth = true } = {}) {

@@ -136,7 +136,7 @@ export default function AppLayout() {
             color: 'var(--color-sidebar-active-bg)',
           }}
         >
-          CITI
+          HEX
         </Typography>
         <Typography
           component="div"

@@ -46,7 +46,7 @@ Think of it as your **project blueprint** during the workshop.
 
 ## Purpose
 
-The Implementation Plan defines the execution strategy for developing the CITI Project Management Platform.
+The Implementation Plan defines the execution strategy for developing the HEX Project Management Platform.
 
 It outlines the development phases, implementation sequence, dependencies, testing approach, deployment process, and project milestones to ensure a structured and efficient delivery.
 

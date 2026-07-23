@@ -32,15 +32,15 @@ describe('ColorModeProvider', () => {
 
     await user.click(button);
     expect(button).toHaveTextContent('mode: dark');
-    expect(localStorage.getItem('citi_color_mode')).toBe('dark');
+    expect(localStorage.getItem('hex_color_mode')).toBe('dark');
 
     await user.click(button);
     expect(button).toHaveTextContent('mode: light');
-    expect(localStorage.getItem('citi_color_mode')).toBe('light');
+    expect(localStorage.getItem('hex_color_mode')).toBe('light');
   });
 
   it('honours a stored preference over the OS default', () => {
-    localStorage.setItem('citi_color_mode', 'dark');
+    localStorage.setItem('hex_color_mode', 'dark');
     render(
       <ColorModeProvider>
         <Probe />

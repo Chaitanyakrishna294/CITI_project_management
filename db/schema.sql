@@ -1,4 +1,4 @@
--- CITI Project Management Platform — PostgreSQL schema
+-- HEX Project Management Platform — PostgreSQL schema
 -- Apply with: psql "$POSTGRES_CONN" -f db/schema.sql
 
 CREATE TYPE user_role AS ENUM ('admin', 'project_manager', 'team_member', 'finance', 'viewer');

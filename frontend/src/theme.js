@@ -1,5 +1,5 @@
 /**
- * MUI theme for the CITI Project Management Platform.
+ * MUI theme for the HEX Project Management Platform.
  *
  * Visual language: "Harbor Blue" (21st.dev community theme by serafimcloud,
  * https://21st.dev/community/themes/harbor-blue) translated into MUI tokens —

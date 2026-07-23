@@ -1,5 +1,5 @@
 /**
- * Route table for the CITI Project Management Platform.
+ * Route table for the HEX Project Management Platform.
  *
  * Mirrors the sitemap in req/UI_UX_Design&UserFlow.md §6 and the screen/role
  * matrix at the end of that document. Role gating here is a UX affordance —

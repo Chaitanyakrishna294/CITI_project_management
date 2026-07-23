@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for working on the **CITI Project Management Platform**, derived from the planning docs in `req/`.
+Guidance for working on the **HEX Project Management Platform**, derived from the planning docs in `req/`.
 
 ## Project Overview
 
