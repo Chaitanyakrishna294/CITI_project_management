@@ -50,7 +50,7 @@ describe('Login page', () => {
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
-    await userEvent.click(screen.getByRole('button', { name: /login/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => expect(login).toHaveBeenCalledWith('user@example.com', 'mypassword'));
     expect(await screen.findByText('Dashboard Page')).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('Login page', () => {
 
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^password/i), 'wrongpass');
-    await userEvent.click(screen.getByRole('button', { name: /login/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     expect(await screen.findByText('Invalid credentials')).toBeInTheDocument();
     expect(screen.queryByText('Dashboard Page')).not.toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('Login page', () => {
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: 'Sign in' });
     await userEvent.click(submitButton);
 
     await waitFor(() => expect(submitButton).toBeDisabled());
@@ -99,7 +99,7 @@ describe('Login page', () => {
     await userEvent.type(screen.getByLabelText(/email/i), 'user@example.com');
     await userEvent.type(screen.getByLabelText(/^password/i), 'mypassword');
 
-    const submitButton = screen.getByRole('button', { name: /login/i });
+    const submitButton = screen.getByRole('button', { name: 'Sign in' });
     await userEvent.click(submitButton);
 
     await waitFor(() => expect(submitButton).toBeDisabled());

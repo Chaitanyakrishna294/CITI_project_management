@@ -181,15 +181,40 @@ export default function TeamDetails() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-        <IconButton component={RouterLink} to="/teams" aria-label="Back to teams">
-          <BackIcon />
-        </IconButton>
-        <Typography variant="h4" component="h1" sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}>
+      <Button
+        size="small"
+        component={RouterLink}
+        to="/teams"
+        startIcon={<BackIcon size={18} />}
+        sx={{ mb: 1 }}
+      >
+        Back to Teams
+      </Button>
+
+      <Stack direction="row" alignItems="center" spacing={2}>
+        {/* Detail titles echo PageHeader: the display serif at 32px — body,
+            data and buttons stay Inter. */}
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 600,
+            fontSize: 32,
+            letterSpacing: '-0.015em',
+            lineHeight: 1.2,
+          }}
+        >
           {team.name}
         </Typography>
         <Chip size="small" label={team.location} />
       </Stack>
+      {/* The thread dash under the title, matching PageHeader. Decorative
+          only — the title itself carries the semantics. */}
+      <Box
+        aria-hidden
+        sx={{ width: 36, height: 3, borderRadius: 2, bgcolor: 'var(--color-thread)', mt: 1.25, mb: 2.5 }}
+      />
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={5}>

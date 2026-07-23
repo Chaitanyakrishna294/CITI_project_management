@@ -14,7 +14,6 @@ import { useEffect, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 
 import DataTable from '../components/DataTable';
@@ -23,9 +22,7 @@ import * as teamsService from '../services/teamsService';
 import { EmptyDataIllustration } from '../components/illustrations';
 import PageHeader from '../components/PageHeader';
 import StatusIndicator from '../components/StatusIndicator';
-import KpiCard from '../components/KpiCard';
-
-
+import StatBand from '../components/StatBand';
 
 function FlagCell({ active, label }) {
   if (!active) return null;
@@ -90,15 +87,26 @@ const columns = [
   {
     id: 'reports_to_org_leader',
     label: 'Reports to org leader',
-    // Status meaning is dot+label, never a filled pill (glow-up brief v2 §2):
-    // the primary dot marks the teams behind the "report to org leader" count,
-    // under the column heading that names the state. Primary, not the ochre
-    // accent — a reporting line is structure, not something to act on.
+    // In this table a dot means a status flag (the warning FlagCells to the
+    // left). The old primary dot was Harbor Blue; under Ink & Porcelain it
+    // would render as ink — a third apparent status hue in light, a near-white
+    // dot in dark — so the mark is carried as text instead: the name, plus a
+    // quiet "Org leader" tag on the teams behind the KPI count. CSV export
+    // keeps the explicit Yes/No.
     render: (row) =>
-      row.reports_to_org_leader ? (
-        <StatusIndicator color="primary.main" label={row.reports_to_name} />
+      row.reports_to_name ? (
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: 0.75 }}>
+          <Typography component="span" variant="body2">
+            {row.reports_to_name}
+          </Typography>
+          {row.reports_to_org_leader && (
+            <Typography component="span" variant="caption" color="text.secondary">
+              Org leader
+            </Typography>
+          )}
+        </Box>
       ) : (
-        row.reports_to_name || '—'
+        '—'
       ),
     sortValue: (row) => (row.reports_to_org_leader ? 0 : 1),
     exportValue: (row) => yesNo(row.reports_to_org_leader),
@@ -158,39 +166,33 @@ export default function TeamInsights() {
 
       {!loading && !error && teams.length > 0 && (
         <>
-          <Grid container spacing={2} sx={{ mt: 1, mb: 2 }}>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <KpiCard label="Teams" value={summary.team_count} caption="Across the organization" />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <KpiCard
-                label="Leader not co-located"
-                value={summary.leader_not_colocated}
-                caption="Leader based away from the team"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <KpiCard
-                label="Non-direct leaders"
-                value={summary.leader_non_direct}
-                caption="Teams led by non-direct staff"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <KpiCard
-                label="Non-direct ratio > 20%"
-                value={summary.non_direct_ratio_above_20pct}
-                caption="Share of non-direct members"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2.4}>
-              <KpiCard
-                label="Report to org leader"
-                value={summary.reporting_to_org_leader}
-                caption="Direct line to an org leader"
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ mt: 1, mb: 2 }}>
+            <StatBand
+              items={[
+                { label: 'Teams', value: summary.team_count, caption: 'Across the organization' },
+                {
+                  label: 'Leader not co-located',
+                  value: summary.leader_not_colocated,
+                  caption: 'Leader based away from the team',
+                },
+                {
+                  label: 'Non-direct leaders',
+                  value: summary.leader_non_direct,
+                  caption: 'Teams led by non-direct staff',
+                },
+                {
+                  label: 'Non-direct ratio > 20%',
+                  value: summary.non_direct_ratio_above_20pct,
+                  caption: 'Share of non-direct members',
+                },
+                {
+                  label: 'Report to org leader',
+                  value: summary.reporting_to_org_leader,
+                  caption: 'Direct line to an org leader',
+                },
+              ]}
+            />
+          </Box>
 
           <DataTable
             columns={columns}

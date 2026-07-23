@@ -13,34 +13,42 @@
      active mode instead of staying light inside dark. */
   color-scheme: light;
 
-  --color-primary: #194391;
-  --color-primary-light: #4169e1;
-  --color-primary-dark: #122f66;
-  --color-secondary: #475569;
+  /* ── Ink & Porcelain ─────────────────────────────────────────────────
+     HEX's visual language: warm porcelain canvas, near-black ink chrome
+     and actions, and a single viridian "thread" that marks the live
+     things — the active nav item, focus, the dash under every title.
+     All pairs WCAG-validated 2026-07 (text ≥4.5:1, marks ≥3:1). */
+  --color-primary: #181b21; /* ink — buttons, links, emphasis */
+  --color-primary-light: #2a2e36;
+  --color-primary-dark: #0b0d11;
+  --color-secondary: #5a616e;
   --color-success: #15803d;
   --color-warning: #b45309;
-  --color-error: #dc2626;
+  --color-error: #d32222; /* 4.8:1 on the porcelain canvas */
   --color-info: #0369a1;
-  --color-bg-canvas: #f1f5f9;
+  --color-bg-canvas: #f7f6f3; /* porcelain — warm, not blue-gray */
   --color-bg-paper: #ffffff;
-  --color-bg-sunken: #f8fafc; /* one step off paper: table heads, wells */
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-divider: #e2e8f0;
+  --color-bg-sunken: #f1efeb; /* one step off paper: wells, code, rails */
+  --color-text-primary: #16181d;
+  --color-text-secondary: #5a616e;
+  --color-divider: #e7e5e0;
 
-  /* The one controlled accent beyond navy (brief v2 §2): warm ochre, used
-     only where something needs acting on — the attention panel border, the
-     at-risk line, the table-header underline. Never a background wash. */
+  /* Attention accent: warm ochre, only where something needs acting on
+     (the attention panel border, at-risk line). Never a background wash. */
   --color-accent: #b45309;
 
-  --color-focus-ring: #194391;
+  /* The thread: viridian for "current / live / focused". 5.1:1 as a mark
+     on porcelain and 3.4:1 on the ink sidebar (focus must survive there
+     too). Never used for status meaning — that stays semantic. */
+  --color-thread: #0f766e;
+  --color-focus-ring: #0f766e;
 
-  /* Sidebar is its own surface: solid deep navy in both modes. */
-  --color-sidebar-bg: #122f66;
-  --color-sidebar-text: #c7d4ee;
-  --color-sidebar-active-bg: #f8f5ef; /* warm off-white, not a blue wash */
-  --color-sidebar-active-text: #122f66;
-  --color-sidebar-rule: rgba(255, 255, 255, 0.14);
+  /* Sidebar is its own surface: solid ink in both modes. */
+  --color-sidebar-bg: #101216;
+  --color-sidebar-text: #dcdfe6; /* bright on ink — nav must read without effort */
+  --color-sidebar-active-bg: #f3f1ec; /* porcelain plate on ink */
+  --color-sidebar-active-text: #16181d;
+  --color-sidebar-rule: rgba(255, 255, 255, 0.12);
   --color-sidebar-hover: rgba(255, 255, 255, 0.06);
 
   --font-ui: 'Inter Variable', Inter, 'Segoe UI', Roboto, sans-serif;
@@ -48,42 +56,45 @@
   --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
 
   --space-unit: 8px;
-  --radius: 8px;
+  --radius: 10px;
 
-  --color-scrollbar: #cbd5e1; /* slate-300 thumb on the light canvas */
+  --color-scrollbar: #d4d1cb; /* stone thumb on the porcelain canvas */
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  /* Lightened for AA on the dark canvas — not the raw light-mode values. */
-  --color-primary: #6d93e0;
-  --color-primary-light: #8fabf0;
-  --color-primary-dark: #4169e1;
-  --color-secondary: #94a3b8;
+  /* Dark ink: the same language inverted — porcelain becomes the action
+     colour on true-ink surfaces. Retuned for AA, not raw inversions. */
+  --color-primary: #e9e7e2; /* porcelain — buttons flip to ink text */
+  --color-primary-light: #ffffff;
+  --color-primary-dark: #cfccc5;
+  --color-secondary: #9aa0aa;
   --color-success: #4ade80;
   --color-warning: #fbbf24;
   --color-error: #f87171;
   --color-info: #38bdf8;
-  --color-bg-canvas: #0b1220;
-  --color-bg-paper: #131c2e;
-  --color-bg-sunken: #1a2438;
-  --color-text-primary: #e2e8f0;
-  --color-text-secondary: #94a3b8;
-  --color-divider: #1e293b;
+  --color-bg-canvas: #0d0f13;
+  --color-bg-paper: #15181e;
+  --color-bg-sunken: #1b1f26;
+  --color-text-primary: #e8e6e1;
+  --color-text-secondary: #9aa0aa;
+  --color-divider: #242830;
 
   --color-accent: #fbbf24;
-  --color-focus-ring: #8fabf0;
+
+  --color-thread: #45b39c; /* 6.9:1 as a mark on the ink paper */
+  --color-focus-ring: #45b39c;
 
   /* Dark sidebar: a shade deeper than the canvas so the silhouette holds. */
-  --color-sidebar-bg: #091026;
-  --color-sidebar-text: #a9b8d8;
-  --color-sidebar-active-bg: #ece7dc;
-  --color-sidebar-active-text: #122f66;
-  --color-sidebar-rule: rgba(255, 255, 255, 0.1);
+  --color-sidebar-bg: #08090c;
+  --color-sidebar-text: #ccd1da;
+  --color-sidebar-active-bg: #e9e7e2;
+  --color-sidebar-active-text: #14161b;
+  --color-sidebar-rule: rgba(255, 255, 255, 0.09);
   --color-sidebar-hover: rgba(255, 255, 255, 0.05);
 
-  --color-scrollbar: #334155; /* slate-700 thumb on the dark canvas */
+  --color-scrollbar: #333842; /* graphite thumb on the ink canvas */
 }
 
 html {
@@ -95,8 +106,8 @@ html {
   scrollbar-color: var(--color-scrollbar) transparent;
 }
 
-/* Text selection carries the brand: navy plate in light, sky plate in dark
-   (the vars flip both halves, keeping AA either way). */
+/* Text selection carries the brand: ink plate in light, porcelain plate in
+   dark (the vars flip both halves, keeping AA either way). */
 ::selection {
   background: var(--color-primary);
   color: var(--color-bg-paper);

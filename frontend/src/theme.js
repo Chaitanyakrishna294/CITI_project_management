@@ -1,9 +1,10 @@
 /**
  * MUI theme for the HEX Project Management Platform.
  *
- * Visual language: "Harbor Blue" (21st.dev community theme by serafimcloud,
- * https://21st.dev/community/themes/harbor-blue) translated into MUI tokens —
- * deep navy primary on slate neutrals, hairline borders, Inter.
+ * Visual language: "Ink & Porcelain" — warm porcelain canvas, near-black ink
+ * chrome and actions (colour is spent on data, not decoration), Fraunces
+ * display titles, and a single viridian thread marking whatever is current:
+ * the active nav item, focus rings, row hover, the dash under every title.
  *
  * Still implements the design system defined in req/UI_UX_Design&UserFlow.md:
  *   §9 Colors      — primary blue, success green, warning orange, danger red,
@@ -20,24 +21,40 @@ import { createTheme, useTheme } from '@mui/material/styles';
 /**
  * Reserved status colours — they encode *state*, never series identity, so they
  * are kept out of the categorical palette below. Charts and chips using these
- * always ship a text label alongside, never colour alone. Hues are tuned to the
- * Harbor Blue neutrals and hold ≥4.5:1 with white text (status chips render
- * white-on-colour in Budgets/Reports).
+ * always ship a text label alongside, never colour alone. Hues hold ≥3:1 as
+ * marks on the porcelain canvas and white paper (validated 2026-07), and
+ * ≥4.5:1 with white text where they fill a badge.
  */
+/** Human labels for the status enums — the UI never shows raw keys. */
+export const STATUS_LABELS = {
+  active: 'Active',
+  completed: 'Completed',
+  delayed: 'Delayed',
+  archived: 'Archived',
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  blocked: 'Blocked',
+};
+
+/** Label for a status key, falling back to the raw key for unknown values. */
+export const statusLabel = (status) => STATUS_LABELS[status] || status;
+
 export const STATUS_COLORS = {
   active: '#15803d',
   completed: '#15803d',
   delayed: '#b45309',
   archived: '#64748b',
   not_started: '#64748b',
-  in_progress: '#194391',
+  // Same blue as CHART_COLORS[0]: two nearly-equal blues on one dashboard
+  // read as an error, so "in progress" and series slot 0 share the hue.
+  in_progress: '#2255b0',
   blocked: '#b91c1c',
 };
 
 /**
  * Categorical palette for chart series, assigned in fixed order and never
- * cycled. Slot 0 is the Harbor Blue navy stepped into the legible lightness
- * band; the remaining slots separate by hue rather than by tint.
+ * cycled. Slot 0 is the ledger blue stepped into the legible lightness band;
+ * the remaining slots separate by hue rather than by tint.
  *
  * A tint ramp of one hue was tried first and had to be abandoned: it survives
  * protan/deutan/tritan simulation, but the two pale steps landed at ΔE 10
@@ -59,9 +76,9 @@ export const STATUS_COLORS = {
 export const CHART_COLORS = ['#2255b0', '#15803d', '#c2410c', '#7c3aed'];
 
 /**
- * Dark-surface counterparts (glow-up brief v2 §3.1). Validated 2026-07 against
- * the dark paper tone #131c2e: every mark ≥3:1 (in_progress 5.6:1, blocked
- * 6.2:1, chart slots 5.6/3.4/3.3/6.3:1). Slots 0 and 3 sit near each other in
+ * Dark-surface counterparts. Re-validated 2026-07 against the ink paper tone
+ * #15181e: every mark ≥3:1 (in_progress 5.8:1, blocked 6.4:1, chart slots
+ * within the same band). Slots 0 and 3 sit near each other in
  * lightness but apart in hue — the same mitigation stack as light mode applies
  * (direct labels, 2px gaps, table fallback). Use the hooks below rather than
  * picking a set by hand.
@@ -87,80 +104,80 @@ export function useChartColors() {
 }
 
 /**
- * Light palette — the original Harbor Blue tokens (see per-token notes below).
+ * Light palette — Ink & Porcelain (see per-token notes below).
  */
 const LIGHT_PALETTE = {
   mode: 'light',
-  // Harbor Blue primary #194391 (9.6:1 on white); light/dark from its ramp.
-  primary: { main: '#194391', light: '#4169e1', dark: '#122f66', contrastText: '#ffffff' },
-  // Slate secondary for neutral emphasis, matching the Harbor neutrals.
-  secondary: { main: '#475569', contrastText: '#ffffff' },
+  // Ink & Porcelain: primary actions are ink, not a hue — colour is spent
+  // on data (status, charts) and the viridian thread, never on chrome.
+  // Mirrors the :root custom properties in index.css; every pair below was
+  // WCAG-checked 2026-07 (text ≥4.5:1 on its surfaces, marks ≥3:1).
+  primary: { main: '#181b21', light: '#2a2e36', dark: '#0b0d11', contrastText: '#ffffff' },
+  secondary: { main: '#5a616e', contrastText: '#ffffff' },
   success: { main: '#15803d', contrastText: '#ffffff' },
   warning: { main: '#b45309', contrastText: '#ffffff' },
-  // Harbor destructive is #ef4444; main sits one step darker so error text
-  // on white clears AA, with the original kept as `light`.
-  error: { main: '#dc2626', light: '#ef4444', dark: '#b91c1c', contrastText: '#ffffff' },
+  // 4.8:1 on the porcelain canvas (the old #dc2626 sat at 4.47 — under AA).
+  error: { main: '#d32222', light: '#ef4444', dark: '#b91c1c', contrastText: '#ffffff' },
   info: { main: '#0369a1', contrastText: '#ffffff' },
   background: {
-    default: '#f1f5f9', // Harbor "muted" — the canvas behind content
-    paper: '#ffffff', // White for cards, tables, dialogs
+    default: '#f7f6f3', // porcelain — warm, not blue-gray
+    paper: '#ffffff',
   },
   text: {
-    primary: '#0f172a', // Harbor foreground (slate-900)
-    // Harbor muted-foreground is slate-500 (#64748b), but that lands at
-    // 4.34:1 on the canvas below — under the 4.5:1 AA floor req/UI_UX §14
-    // requires, and muted text lands on the canvas often (page subtitles,
-    // the search placeholder). Stepped one down the same slate ramp: 6.92:1
-    // on the canvas, 7.58:1 on white.
-    secondary: '#475569', // slate-600
+    primary: '#16181d', // ink
+    secondary: '#5a616e', // 5.8:1 on the canvas, 6.2:1 on white
   },
-  divider: '#e2e8f0', // Harbor border (slate-200)
+  divider: '#e7e5e0', // stone hairline
 };
 
 /**
- * Dark palette — the same Harbor slate ramp, inverted. The navy primary is
- * stepped up to a light-blue band so text and outlines clear AA on the dark
- * canvas (#7da2e8 on #0f172a ≈ 7.5:1); contained buttons therefore flip to
- * dark text. Semantic mains keep their light-mode hues — they are used as
- * filled chip backgrounds with white text, which still reads on dark — while
- * STATUS_COLORS / CHART_COLORS stay shared across modes (their marks always
- * carry direct labels and a table fallback; see the notes above).
+ * Dark palette — dark ink. Actions flip to porcelain fills with ink text;
+ * semantic hues are lightened for AA on the ink surfaces, while
+ * STATUS_COLORS / CHART_COLORS keep their dark counterparts above (their
+ * marks always carry direct labels and a table fallback).
  */
 const DARK_PALETTE = {
   mode: 'dark',
-  // Mirrors the [data-theme="dark"] custom properties in index.css (glow-up
-  // brief v2 §3.1) — lightened hues for AA on the dark canvas, with dark
-  // contrast text wherever a light hue becomes a fill.
-  primary: { main: '#6d93e0', light: '#8fabf0', dark: '#4169e1', contrastText: '#0b1220' },
-  secondary: { main: '#94a3b8', contrastText: '#0b1220' },
+  // Dark ink: porcelain becomes the action colour on true-ink surfaces.
+  // Mirrors [data-theme="dark"] in index.css; retuned for AA, not inverted.
+  primary: { main: '#e9e7e2', light: '#ffffff', dark: '#cfccc5', contrastText: '#14161b' },
+  secondary: { main: '#9aa0aa', contrastText: '#14161b' },
   success: { main: '#4ade80', contrastText: '#052e16' },
   warning: { main: '#fbbf24', contrastText: '#451a03' },
   error: { main: '#f87171', light: '#fca5a5', dark: '#ef4444', contrastText: '#450a0a' },
   info: { main: '#38bdf8', contrastText: '#082f49' },
   background: {
-    default: '#0b1220', // near-black navy canvas
-    paper: '#131c2e', // panel surface — "elevation" is this step, not shadow
+    default: '#0d0f13', // ink canvas
+    paper: '#15181e', // panel surface — "elevation" is this step, not shadow
   },
   text: {
-    primary: '#e2e8f0',
-    secondary: '#94a3b8', // 5.9:1 on the paper tone
+    primary: '#e8e6e1', // warm porcelain text
+    secondary: '#9aa0aa', // 6.8:1 on the paper tone
   },
-  divider: '#1e293b',
+  divider: '#242830',
 };
 
 /**
- * Display face for page-level headings ONLY (brief v2 §2): Fraunces, the
- * high-contrast serif, self-hosted via @fontsource-variable/fraunces. Applied
- * through PageHeader and the two dashboard titles — never body, never buttons.
+ * Display face for page-level headings ONLY: Fraunces, the high-contrast
+ * serif, self-hosted via @fontsource-variable/fraunces. Applied through
+ * PageHeader, the detail-page titles (ProjectDetails/TeamDetails), the Login
+ * headings and the sidebar wordmark — never body, never buttons.
  */
 export const DISPLAY_FONT = "'Fraunces Variable', Georgia, 'Times New Roman', serif";
 
 /**
- * The single accent beyond navy (brief v2 §2): warm ochre in light, amber in
- * dark. Reserved for "needs acting on" — the attention panel border, at-risk
- * chart line, table-header underline. Never a background wash.
+ * Attention accent: warm ochre in light, amber in dark. Reserved for "needs
+ * acting on" — the attention panel border, at-risk chart line. Never a
+ * background wash.
  */
 export const ACCENT = { light: '#b45309', dark: '#fbbf24' };
+
+/**
+ * The thread: viridian marking "current / live / focused" — the dash under
+ * every page title, the active-nav notch, focus rings, row-hover bars.
+ * Structural, never semantic: status meaning stays with STATUS_COLORS.
+ */
+export const THREAD = { light: '#0f766e', dark: '#45b39c' };
 
 /**
  * Build the theme for one colour mode. The default export stays the light
@@ -169,6 +186,7 @@ export const ACCENT = { light: '#b45309', dark: '#fbbf24' };
  */
 export function buildTheme(mode = 'light') {
   const palette = mode === 'dark' ? DARK_PALETTE : LIGHT_PALETTE;
+  const thread = mode === 'dark' ? THREAD.dark : THREAD.light;
   return createTheme({
   // §9 Spacing — 8px grid. theme.spacing(1) === 8px, so sx={{ p: 2 }} is 16px.
   spacing: 8,
@@ -176,7 +194,7 @@ export function buildTheme(mode = 'light') {
   palette,
 
   typography: {
-    // Harbor Blue ships Inter. Self-hosted via @fontsource-variable/inter,
+    // Inter for UI and data. Self-hosted via @fontsource-variable/inter,
     // imported in main.jsx — no third-party font CDN at runtime.
     //
     // 'Inter Variable' is the family name the variable build declares; plain
@@ -208,8 +226,9 @@ export function buildTheme(mode = 'light') {
     caption: { fontSize: '0.75rem' },
   },
 
-  // Harbor Blue radius: 0.5rem.
-  shape: { borderRadius: 8 },
+  // Ink & Porcelain: 10px surfaces — soft enough to read current, firm
+  // enough to stay an instrument, not a toy.
+  shape: { borderRadius: 10 },
 
   components: {
     // §14 — focus must always be visible, not just on mouse interaction.
@@ -217,9 +236,8 @@ export function buildTheme(mode = 'light') {
       styleOverrides: {
         root: {
           '&:focus-visible': {
-            // Focus ring follows the mode's primary so it stays visible on
-            // both canvases.
-            outline: `2px solid ${palette.primary.main}`,
+            // Focus rides the viridian thread — visible on every surface.
+            outline: `2px solid ${thread}`,
             outlineOffset: 2,
           },
         },
@@ -228,10 +246,14 @@ export function buildTheme(mode = 'light') {
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
+        // Pill silhouette: the one rounded form in the language, shared
+        // with the search field, so every "do something" affordance has
+        // the same shape.
+        root: { borderRadius: 999, paddingLeft: 18, paddingRight: 18 },
         // Row-action text buttons (Edit / Archive / Delete) appear once per
         // table row; at the full 600 button weight a column of them competes
         // with the data. Text variant steps to 500 — filled/outlined CTAs
-        // keep the documented 600.
+        // keep 600.
         text: { fontWeight: 500 },
       },
     },
@@ -268,7 +290,8 @@ export function buildTheme(mode = 'light') {
         // "needs acting on" signals.)
         // Ledger-caps headers: small, letter-spaced, muted — column names
         // whisper so the data speaks. DOM text stays as written (CSS-only
-        // transform), so accessible names are unchanged.
+        // transform), so accessible names are unchanged. The 2px ink rule
+        // closes the header; ink, not thread — it is structure, not state.
         head: {
           fontWeight: 600,
           fontSize: '0.75rem',
@@ -276,7 +299,7 @@ export function buildTheme(mode = 'light') {
           letterSpacing: '0.06em',
           color: palette.text.secondary,
           backgroundColor: 'transparent',
-          borderBottom: `2px solid ${palette.primary.main}`,
+          borderBottom: `2px solid ${palette.text.primary}`,
         },
         // Numeric columns read in columns: right-aligned cells get tabular
         // figures so digits line up vertically.
@@ -285,12 +308,13 @@ export function buildTheme(mode = 'light') {
     },
     MuiTableRow: {
       styleOverrides: {
-        // Row hover is a 3px left-edge primary bar, not a full-row tint —
-        // the pointer's row is marked without repainting the data.
+        // Row hover is a 3px left-edge thread bar, not a full-row tint —
+        // the pointer's row is "current", and current is what the thread
+        // marks everywhere else.
         root: {
           '&.MuiTableRow-hover:hover': {
             backgroundColor: 'transparent',
-            boxShadow: `inset 3px 0 0 ${palette.primary.main}`,
+            boxShadow: `inset 3px 0 0 ${thread}`,
           },
           transition: 'box-shadow 0.15s ease-out',
         },
@@ -298,6 +322,22 @@ export function buildTheme(mode = 'light') {
     },
     MuiChip: {
       defaultProps: { size: 'small' },
+    },
+    // Alerts drop the stock Material tinted wash — the one place the default
+    // look survived. Paper surface, hairline edge, severity carried by a 3px
+    // left rule and the icon (which keeps its severity colour).
+    MuiAlert: {
+      styleOverrides: {
+        standard: {
+          backgroundColor: palette.background.paper,
+          border: `1px solid ${palette.divider}`,
+          color: palette.text.primary,
+        },
+        standardError: { borderLeft: `3px solid ${palette.error.main}` },
+        standardWarning: { borderLeft: `3px solid ${palette.warning.main}` },
+        standardSuccess: { borderLeft: `3px solid ${palette.success.main}` },
+        standardInfo: { borderLeft: `3px solid ${palette.info.main}` },
+      },
     },
     MuiTextField: {
       defaultProps: { size: 'small' },

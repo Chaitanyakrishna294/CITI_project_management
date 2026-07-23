@@ -21,7 +21,7 @@ import * as deliverablesService from '../services/deliverablesService';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
-import { useStatusColors } from '../theme';
+import { useStatusColors, statusLabel } from '../theme';
 import PageHeader from '../components/PageHeader';
 import { EmptyWorkIllustration } from '../components/illustrations';
 import StatusIndicator from '../components/StatusIndicator';
@@ -35,7 +35,7 @@ function today() {
 
 function StatusChip({ status }) {
   const statusColors = useStatusColors();
-  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={status} />;
+  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={statusLabel(status)} />;
 }
 
 export default function Deliverables() {
@@ -162,7 +162,7 @@ export default function Deliverables() {
           >
             {STATUSES.map((s) => (
               <MenuItem key={s} value={s}>
-                {s}
+                {statusLabel(s)}
               </MenuItem>
             ))}
           </TextField>
@@ -196,6 +196,59 @@ export default function Deliverables() {
   const loading = deliverables === null && !error;
   const hasFilters = Object.values(filters).some(Boolean);
 
+  // Filters live inside the table surface (DataTable's toolbar row), so the
+  // list is one continuous Paper rather than controls floating above it.
+  const toolbar = (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, flexGrow: 1 }}>
+      <TextField
+        label="Search" size="small" sx={{ minWidth: 200, flexGrow: 1 }}
+        placeholder="Search by title or description"
+        value={filters.q}
+        onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+      />
+      <Stack direction="row" spacing={2}>
+        <TextField
+          select label="Status" size="small" sx={{ minWidth: 150 }}
+          value={filters.status}
+          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+        >
+          <MenuItem value="">All</MenuItem>
+          {STATUSES.map((s) => (
+            <MenuItem key={s} value={s}>
+              {statusLabel(s)}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select label="Project" size="small" sx={{ minWidth: 180 }}
+          value={filters.project_id}
+          onChange={(e) => setFilters({ ...filters, project_id: e.target.value })}
+        >
+          <MenuItem value="">All</MenuItem>
+          {projects.map((p) => (
+            <MenuItem key={p.id} value={p.id}>
+              {p.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Stack>
+      {owners.length > 0 && (
+        <TextField
+          select label="Owner" size="small" sx={{ minWidth: 160 }}
+          value={filters.owner_id}
+          onChange={(e) => setFilters({ ...filters, owner_id: e.target.value })}
+        >
+          <MenuItem value="">All</MenuItem>
+          {owners.map((o) => (
+            <MenuItem key={o.id} value={o.id}>
+              {o.name}
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
+    </Box>
+  );
+
   return (
     <Box>
       <PageHeader
@@ -207,60 +260,6 @@ export default function Deliverables() {
         }
       />
 
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-        <TextField
-          label="Search"
-          sx={{ minWidth: 220 }}
-          placeholder="Search by title or description"
-          value={filters.q}
-          onChange={(e) => setFilters({ ...filters, q: e.target.value })}
-        />
-        <TextField
-          select
-          label="Status"
-          sx={{ minWidth: 160 }}
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-        >
-          <MenuItem value="">All</MenuItem>
-          {STATUSES.map((s) => (
-            <MenuItem key={s} value={s}>
-              {s}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label="Project"
-          sx={{ minWidth: 200 }}
-          value={filters.project_id}
-          onChange={(e) => setFilters({ ...filters, project_id: e.target.value })}
-        >
-          <MenuItem value="">All</MenuItem>
-          {projects.map((p) => (
-            <MenuItem key={p.id} value={p.id}>
-              {p.name}
-            </MenuItem>
-          ))}
-        </TextField>
-        {owners.length > 0 && (
-          <TextField
-            select
-            label="Owner"
-            sx={{ minWidth: 180 }}
-            value={filters.owner_id}
-            onChange={(e) => setFilters({ ...filters, owner_id: e.target.value })}
-          >
-            <MenuItem value="">All</MenuItem>
-            {owners.map((o) => (
-              <MenuItem key={o.id} value={o.id}>
-                {o.name}
-              </MenuItem>
-            ))}
-          </TextField>
-        )}
-      </Stack>
-
       {actionError && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {actionError}
@@ -269,18 +268,17 @@ export default function Deliverables() {
 
       {loading && <LoadingState variant="table" />}
       {!loading && error && <ErrorState error={error} onRetry={retry} />}
-      {!loading && !error && rows.length === 0 && (
+      {/* Unfiltered and empty: nothing to filter, so the call to action takes
+          the whole screen. Filtered-empty keeps the table (and its toolbar)
+          so the user can clear whatever emptied it. */}
+      {!loading && !error && rows.length === 0 && !hasFilters && (
         <EmptyState
           icon={<EmptyWorkIllustration />}
           title="No deliverables found"
-          message={
-            hasFilters
-              ? 'No deliverables match the current filters. Try clearing them.'
-              : 'Deliverables are created from a project’s Deliverables tab.'
-          }
+          message="Deliverables are created from a project’s Deliverables tab."
         />
       )}
-      {!loading && !error && rows.length > 0 && (
+      {!loading && !error && (rows.length > 0 || hasFilters) && (
         <DataTable
           columns={columns}
           rows={rows}
@@ -288,7 +286,8 @@ export default function Deliverables() {
           defaultOrderBy="due_date"
           defaultOrder="asc"
           exportFilename="deliverables.csv"
-          emptyMessage="No deliverables found."
+          emptyMessage="No deliverables match these filters."
+          toolbar={toolbar}
         />
       )}
     </Box>

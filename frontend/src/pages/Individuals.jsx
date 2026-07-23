@@ -158,7 +158,11 @@ export default function Individuals() {
     {
       id: 'is_org_leader',
       label: 'Org leader',
-      render: (row) => (row.is_org_leader ? <Chip size="small" color="primary" label="Org leader" /> : null),
+      // Outlined, not filled: a filled primary chip is now an ink pill —
+      // indistinguishable from the ink button pills in the Actions column.
+      // The hairline-outline chip reads as a designation badge, not a control.
+      render: (row) =>
+        row.is_org_leader ? <Chip size="small" variant="outlined" color="primary" label="Org leader" /> : null,
       sortValue: (row) => (row.is_org_leader ? 0 : 1),
       exportValue: (row) => (row.is_org_leader ? 'Yes' : 'No'),
     },
@@ -229,7 +233,6 @@ export default function Individuals() {
       <Dialog
         open={dialogOpen}
         onClose={() => !saving && setDialogOpen(false)}
-        fullWidth
         maxWidth="xs"
         aria-labelledby="individual-dialog-title"
       >

@@ -48,9 +48,11 @@ export function LoadingState({ variant = 'table', rows = 5, label = 'Loading…'
 
   return (
     <Paper role="status" aria-label={label} sx={{ p: 2 }}>
-      <Skeleton variant="rectangular" height={40} sx={{ mb: 1 }} />
+      {/* Rounded, matching the radius-10 surfaces they stand in for —
+          square flashes inside rounded cards read as a glitch. */}
+      <Skeleton variant="rounded" height={40} sx={{ mb: 1 }} />
       {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} variant="rectangular" height={32} sx={{ mb: 0.5 }} />
+        <Skeleton key={i} variant="rounded" height={32} sx={{ mb: 0.5 }} />
       ))}
     </Paper>
   );

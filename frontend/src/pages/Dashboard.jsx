@@ -3,7 +3,7 @@
  * §4 and req/UI_UX_Design&UserFlow.md §7.
  *
  * Widgets: active projects, projects at risk, budget overview, resource
- * utilisation, upcoming deadlines — plus the KPI cards and charts §12 calls for.
+ * utilisation, upcoming deadlines — plus the KPI stat band and charts §12 calls for.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -22,15 +22,14 @@ import * as projectsService from '../services/projectsService';
 import * as budgetsService from '../services/budgetsService';
 import * as resourcesService from '../services/resourcesService';
 import * as deliverablesService from '../services/deliverablesService';
-import { useAuth } from '../contexts/AuthContext';
 import { LoadingState, ErrorState } from '../components/PageState';
 import ChartFrame from '../components/charts/ChartFrame';
 import BarChart from '../components/charts/BarChart';
 import DonutChart from '../components/charts/DonutChart';
 import LineChart from '../components/charts/LineChart';
-import { useChartColors, useStatusColors, DISPLAY_FONT } from '../theme';
+import { useChartColors, useStatusColors } from '../theme';
 import StatusIndicator from '../components/StatusIndicator';
-import KpiCard from '../components/KpiCard';
+import StatBand from '../components/StatBand';
 import PageHeader from '../components/PageHeader';
 
 const DELIVERABLE_STATUSES = [
@@ -39,6 +38,15 @@ const DELIVERABLE_STATUSES = [
   { key: 'blocked', label: 'Blocked' },
   { key: 'completed', label: 'Completed' },
 ];
+
+// Human labels for every status enum rendered on this page — raw keys like
+// "in_progress" never reach the user.
+const STATUS_LABELS = {
+  active: 'Active',
+  delayed: 'Delayed',
+  archived: 'Archived',
+  ...Object.fromEntries(DELIVERABLE_STATUSES.map((s) => [s.key, s.label])),
+};
 
 const currency = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -65,7 +73,6 @@ function monthKey(isoDate) {
 
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const chartColors = useChartColors();
   const statusColors = useStatusColors();
   // Bumping the token re-runs the fetch effect; retrying never has to write
@@ -208,20 +215,18 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <PageHeader title="Dashboard" summary={`Welcome back, ${user?.name} (${user?.role})`} />
+      <PageHeader
+        title="Dashboard"
+        summary={`${data.projects.length} projects · ${summary.atRiskProjects.length} at risk · ${summary.budgetPct.toFixed(0)}% budget consumed`}
+      />
 
       {/* Attention tier (glow-up brief §4.4): what needs acting on today sits
           above the steady-state KPIs, not mixed in among them. */}
       {summary.atRiskProjects.length + summary.overAllocated.length + summary.overBudget.length > 0 ? (
-        <Paper sx={{ mt: 2, p: 2, borderLeft: '3px solid var(--color-accent)' }}>
-          {/* Serif micro-heading + accent border: the attention panel is
-              structurally different from the KPI row, not just tinted. */}
-          <Typography
-            variant="subtitle1"
-            component="h2"
-            gutterBottom
-            sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600 }}
-          >
+        <Paper sx={{ mt: 2, px: 2, py: 1.5, borderLeft: '3px solid var(--color-accent)' }}>
+          {/* The ochre accent border alone marks the attention tier; the
+              heading stays Inter — Fraunces is reserved for page titles. */}
+          <Typography variant="subtitle1" component="h2" gutterBottom sx={{ fontWeight: 600 }}>
             Needs attention
           </Typography>
           <Grid container spacing={2}>
@@ -243,7 +248,7 @@ export default function Dashboard() {
                       />
                       {/* Dot + label must agree (UI_UX §14): the risk framing
                           comes from the panel, not a recoloured status dot. */}
-                      <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={p.status} />
+                      <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={STATUS_LABELS[p.status] || p.status} />
                     </ListItem>
                   ))}
                 </List>
@@ -290,48 +295,44 @@ export default function Dashboard() {
           </Grid>
         </Paper>
       ) : (
-        <Paper sx={{ mt: 2, p: 2, borderLeft: '3px solid', borderLeftColor: 'success.main' }}>
-          <Typography variant="body2" color="text.secondary">
-            All clear — no projects at risk, nobody over-allocated, no budgets over plan.
-          </Typography>
-        </Paper>
+        // The all-clear state is a non-event: quiet text, no card, no border.
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+          All clear — no projects at risk, nobody over-allocated, no budgets over plan.
+        </Typography>
       )}
 
-      <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <KpiCard
-            label="Active Projects"
-            value={summary.activeProjects.length}
-            caption={`${summary.completedProjects.length} completed`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KpiCard
-            label="Projects at Risk"
-            value={summary.atRiskProjects.length}
-            valueColor={summary.atRiskProjects.length ? 'error.main' : undefined}
-            caption="Delayed or past due date"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KpiCard
-            label="Budget Utilization"
-            value={`${summary.budgetPct.toFixed(0)}%`}
-            caption={`${currency.format(summary.totalSpent)} / ${currency.format(summary.totalPlanned)}`}
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KpiCard
-            label="Resource Utilization"
-            value={`${summary.avgUtilization.toFixed(0)}%`}
-            caption={`${summary.overAllocated.length} over-allocated`}
-            captionColor={summary.overAllocated.length ? 'error.main' : 'text.secondary'}
-          />
-        </Grid>
-      </Grid>
+      <Box sx={{ mt: 2 }}>
+        <StatBand
+          items={[
+            {
+              label: 'Active Projects',
+              value: summary.activeProjects.length,
+              caption: `${summary.completedProjects.length} completed`,
+            },
+            {
+              label: 'Projects at Risk',
+              value: summary.atRiskProjects.length,
+              valueColor: summary.atRiskProjects.length ? 'error.main' : undefined,
+              caption: 'Delayed or past due date',
+            },
+            {
+              label: 'Budget Utilization',
+              value: `${summary.budgetPct.toFixed(0)}%`,
+              caption: `${currency.format(summary.totalSpent)} / ${currency.format(summary.totalPlanned)}`,
+            },
+            {
+              label: 'Resource Utilization',
+              value: `${summary.avgUtilization.toFixed(0)}%`,
+              caption: `${summary.overAllocated.length} over-allocated`,
+              captionColor: summary.overAllocated.length ? 'error.main' : 'text.secondary',
+            },
+          ]}
+        />
+      </Box>
 
+      {/* Disciplined two-column grid on md+ (one column on mobile). */}
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <ChartFrame
             title="Deliverable Status"
             subtitle="Share of deliverables in each state"
@@ -349,7 +350,7 @@ export default function Dashboard() {
           </ChartFrame>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={6}>
           <ChartFrame
             title="Budget: Planned vs Actual"
             subtitle="Six largest budgets"
@@ -377,7 +378,7 @@ export default function Dashboard() {
           </ChartFrame>
         </Grid>
 
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={6}>
           <ChartFrame
             title="Deliverables Due by Month"
             subtitle="Last six months with due dates"
@@ -400,8 +401,8 @@ export default function Dashboard() {
           </ChartFrame>
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 2, height: '100%' }}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3, height: '100%' }}>
             <Typography variant="h6" component="h2" gutterBottom>
               Upcoming Deadlines
             </Typography>
@@ -417,7 +418,7 @@ export default function Dashboard() {
                     primary={d.title}
                     secondary={`Owner: ${d.owner_name || 'Unassigned'} · Due ${d.due_date}`}
                   />
-                  <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={d.status} />
+                  <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={STATUS_LABELS[d.status] || d.status} />
                 </ListItem>
               ))}
             </List>
@@ -427,7 +428,7 @@ export default function Dashboard() {
       </Grid>
 
       {/* Progress indicator for the portfolio-wide budget, per §12. */}
-      <Paper sx={{ p: 2, mt: 2 }}>
+      <Paper sx={{ p: 3, mt: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
           Overall budget consumed — {summary.budgetPct.toFixed(0)}%
         </Typography>

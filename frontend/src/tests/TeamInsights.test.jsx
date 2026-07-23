@@ -77,12 +77,15 @@ describe('TeamInsights page', () => {
     expect(within(atlasRow).getByText('Lena Frost (London)')).toBeInTheDocument();
     expect(within(atlasRow).getByText('Not co-located')).toBeInTheDocument();
     expect(within(atlasRow).getByText('Olive Grant')).toBeInTheDocument();
+    expect(within(atlasRow).getByText('Org leader')).toBeInTheDocument();
     expect(within(atlasRow).getByText('0%')).toBeInTheDocument();
 
     const nimbusRow = screen.getByRole('link', { name: 'Nimbus' }).closest('tr');
     expect(within(nimbusRow).getByText('Non-direct')).toBeInTheDocument();
     expect(within(nimbusRow).getByText('50%')).toBeInTheDocument();
     expect(within(nimbusRow).queryByText('Not co-located')).not.toBeInTheDocument();
+    expect(within(nimbusRow).getByText('Hector Bloom')).toBeInTheDocument();
+    expect(within(nimbusRow).queryByText('Org leader')).not.toBeInTheDocument();
   });
 
   it('shows an empty state when there are no teams', async () => {

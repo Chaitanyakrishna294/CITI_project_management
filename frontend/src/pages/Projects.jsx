@@ -28,7 +28,7 @@ import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as projectsService from '../services/projectsService';
 import * as usersService from '../services/usersService';
 import { useAuth } from '../contexts/AuthContext';
-import { useStatusColors } from '../theme';
+import { useStatusColors, statusLabel } from '../theme';
 import PageHeader from '../components/PageHeader';
 import StatusIndicator from '../components/StatusIndicator';
 import { AddIcon } from '../components/icons';
@@ -195,7 +195,7 @@ export default function Projects() {
       id: 'name',
       label: 'Name',
       render: (p) => (
-        <Link component={RouterLink} to={`/projects/${p.id}`} underline="hover">
+        <Link component={RouterLink} to={`/projects/${p.id}`}>
           {p.name}
         </Link>
       ),
@@ -207,7 +207,7 @@ export default function Projects() {
       label: 'Status',
       // Status meaning is a dot + label (glow-up brief v2 §2); filled Chips
       // stay reserved for counts/badges.
-      render: (p) => <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={p.status} />,
+      render: (p) => <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={statusLabel(p.status)} />,
     },
     {
       id: 'planned_amount',
@@ -259,7 +259,7 @@ export default function Projects() {
           onChange={(e) => updateFilter('status', e.target.value)}
         >
           <MenuItem value="">All</MenuItem>
-          {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+          {STATUSES.map((s) => <MenuItem key={s} value={s}>{statusLabel(s)}</MenuItem>)}
         </TextField>
         <TextField
           label="Department" size="small" sx={{ minWidth: 130 }}
@@ -363,7 +363,8 @@ export default function Projects() {
         onClose={() => setArchiveTarget(null)}
       />
 
-      <Dialog open={formOpen} onClose={() => setFormOpen(false)} fullWidth maxWidth="sm">
+      {/* fullWidth / maxWidth="sm" come from the theme's MuiDialog defaults. */}
+      <Dialog open={formOpen} onClose={() => setFormOpen(false)}>
         <Box component="form" onSubmit={handleSubmit}>
           <DialogTitle>{editingId ? 'Edit Project' : 'New Project'}</DialogTitle>
           <DialogContent>

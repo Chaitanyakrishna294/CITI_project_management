@@ -60,7 +60,7 @@ describe('DeliverablesPanel', () => {
     expect(within(ownedRow).getByRole('combobox')).toBeInTheDocument();
     // other row: read-only Chip, no combobox
     expect(within(otherRow).queryByRole('combobox')).not.toBeInTheDocument();
-    expect(within(otherRow).getByText('not_started')).toBeInTheDocument();
+    expect(within(otherRow).getByText('Not started')).toBeInTheDocument();
   });
 
   it('changing the status select calls updateDeliverable with the new status', async () => {
@@ -75,7 +75,7 @@ describe('DeliverablesPanel', () => {
     await screen.findByText('Task A');
     const select = screen.getByRole('combobox');
     await user.click(select);
-    const option = await screen.findByRole('option', { name: 'in_progress' });
+    const option = await screen.findByRole('option', { name: 'In progress' });
     await user.click(option);
 
     expect(deliverablesService.updateDeliverable).toHaveBeenCalledWith(1, { status: 'in_progress' });

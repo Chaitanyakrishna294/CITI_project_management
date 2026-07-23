@@ -265,7 +265,23 @@ export default function DataTable({
             {visibleRows.map((row) => (
               <TableRow key={getRowKey(row)} hover>
                 {columns.map((column) => (
-                  <TableCell key={column.id} align={column.align}>
+                  <TableCell
+                    key={column.id}
+                    align={column.align}
+                    sx={
+                      // Row actions recede until the row is the current one
+                      // (pointer or keyboard) — the data reads first, the
+                      // verbs appear when reachable. Opacity only: buttons
+                      // stay in the DOM, focusable and clickable throughout.
+                      column.id === 'actions'
+                        ? {
+                            opacity: 0.4,
+                            transition: 'opacity 0.15s ease-out',
+                            'tr:hover > &, tr:focus-within > &': { opacity: 1 },
+                          }
+                        : undefined
+                    }
+                  >
                     {column.render ? column.render(row) : rawValue(column, row)}
                   </TableCell>
                 ))}

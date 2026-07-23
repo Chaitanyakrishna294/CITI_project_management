@@ -63,20 +63,25 @@ export default function BarChart({ data, series, formatValue = (v) => String(v),
                 const numeric = Number(value) || 0;
                 const width = Math.max(numeric > 0 ? 2 : 0, (numeric / max) * trackWidth);
                 const y = stackTop + seriesIndex * (BAR_HEIGHT + BAR_GAP);
+                // Rounded on the data end only — every bar sits flush on one
+                // crisp baseline (rx on a rect would round both ends).
+                const r = Math.min(3, width / 2);
+                const barPath = [
+                  `M ${LABEL_WIDTH} ${y}`,
+                  `h ${width - r}`,
+                  `a ${r} ${r} 0 0 1 ${r} ${r}`,
+                  `v ${BAR_HEIGHT - 2 * r}`,
+                  `a ${r} ${r} 0 0 1 ${-r} ${r}`,
+                  `h ${-(width - r)}`,
+                  'z',
+                ].join(' ');
                 return (
                   <Tooltip
                     key={series[seriesIndex].label}
                     title={`${label} — ${series[seriesIndex].label}: ${formatValue(numeric)}`}
                     followCursor
                   >
-                    <rect
-                      x={LABEL_WIDTH}
-                      y={y}
-                      width={width}
-                      height={BAR_HEIGHT}
-                      rx={4} // Rounded data-end; the baseline end is covered by the next bar's origin.
-                      fill={series[seriesIndex].color}
-                    />
+                    <path d={barPath} fill={series[seriesIndex].color} />
                   </Tooltip>
                 );
               })}

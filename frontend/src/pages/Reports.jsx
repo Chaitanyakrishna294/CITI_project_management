@@ -24,7 +24,7 @@ import DataTable from '../components/DataTable';
 import PageHeader from '../components/PageHeader';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import { EmptyDataIllustration } from '../components/illustrations';
-import { useStatusColors } from '../theme';
+import { useStatusColors, statusLabel } from '../theme';
 import * as projectsService from '../services/projectsService';
 import * as budgetsService from '../services/budgetsService';
 import * as resourcesService from '../services/resourcesService';
@@ -57,7 +57,7 @@ function yesNo(value) {
 
 function StatusChip({ status }) {
   const statusColors = useStatusColors();
-  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={status} />;
+  return <StatusIndicator color={statusColors[status] || 'grey.500'} label={statusLabel(status)} />;
 }
 
 function FlagCell({ active, label }) {
@@ -371,8 +371,13 @@ export default function Reports() {
         }
       />
 
-      <Paper sx={{ p: 2 }}>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+      {/* One composed surface: filters, tabs and the report table share a
+          single Paper so the page reads header → report unit, not three
+          stacked cards. The filters stay outside the tabpanel because the
+          derived-loading pattern swaps the panel on every keystroke — fields
+          inside it would unmount mid-typing. */}
+      <Paper sx={{ overflow: 'hidden' }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ p: 2 }}>
           <TextField
             label="From"
             type="date"
@@ -395,52 +400,61 @@ export default function Reports() {
             sx={{ minWidth: 200 }}
           />
         </Stack>
+
+        <Tabs
+          value={tab}
+          onChange={(e, value) => setTab(value)}
+          aria-label="Report type"
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{ borderTop: 1, borderBottom: 1, borderColor: 'divider' }}
+        >
+          {REPORTS.map((r) => (
+            <Tab key={r.key} label={r.label} id={`report-tab-${r.key}`} aria-controls={`report-panel-${r.key}`} />
+          ))}
+        </Tabs>
+
+        <Box
+          role="tabpanel"
+          id={`report-panel-${report.key}`}
+          aria-labelledby={`report-tab-${report.key}`}
+          // The states and DataTable each bring their own Paper; flatten the
+          // ones sitting directly in the panel so they merge into this surface.
+          sx={{ '& > .MuiPaper-root': { border: 0, borderRadius: 0 } }}
+        >
+          {loading && <LoadingState label="Loading reports…" />}
+
+          {!loading && error && (
+            <Box sx={{ p: 2 }}>
+              <ErrorState error={error} onRetry={() => setReloadToken((n) => n + 1)} />
+            </Box>
+          )}
+
+          {/* Reports are read-only views, so the §15 call to action stays with
+              the global filters above rather than a button here. */}
+          {!loading && !error && rows.length === 0 && (
+            <EmptyState
+              icon={<EmptyDataIllustration />}
+              title={report.emptyTitle}
+              message={report.emptyMessage}
+            />
+          )}
+
+          {!loading && !error && rows.length > 0 && (
+            <DataTable
+              key={report.key}
+              title={report.title}
+              columns={report.columns}
+              rows={rows}
+              defaultOrderBy={report.defaultOrderBy}
+              defaultOrder={report.defaultOrder || 'asc'}
+              exportFilename={report.exportFilename}
+              emptyMessage={report.emptyMessage}
+              dense
+            />
+          )}
+        </Box>
       </Paper>
-
-      <Tabs
-        value={tab}
-        onChange={(e, value) => setTab(value)}
-        aria-label="Report type"
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{ mt: 2, mb: 2, borderBottom: 1, borderColor: 'divider' }}
-      >
-        {REPORTS.map((r) => (
-          <Tab key={r.key} label={r.label} id={`report-tab-${r.key}`} aria-controls={`report-panel-${r.key}`} />
-        ))}
-      </Tabs>
-
-      <Box role="tabpanel" id={`report-panel-${report.key}`} aria-labelledby={`report-tab-${report.key}`}>
-        {loading && <LoadingState label="Loading reports…" />}
-
-        {!loading && error && (
-          <ErrorState error={error} onRetry={() => setReloadToken((n) => n + 1)} />
-        )}
-
-        {/* Reports are read-only views, so the §15 call to action stays with
-            the global filters above rather than a button here. */}
-        {!loading && !error && rows.length === 0 && (
-          <EmptyState
-            icon={<EmptyDataIllustration />}
-            title={report.emptyTitle}
-            message={report.emptyMessage}
-          />
-        )}
-
-        {!loading && !error && rows.length > 0 && (
-          <DataTable
-            key={report.key}
-            title={report.title}
-            columns={report.columns}
-            rows={rows}
-            defaultOrderBy={report.defaultOrderBy}
-            defaultOrder={report.defaultOrder || 'asc'}
-            exportFilename={report.exportFilename}
-            emptyMessage={report.emptyMessage}
-            dense
-          />
-        )}
-      </Box>
     </Box>
   );
 }

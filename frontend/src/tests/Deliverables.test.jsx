@@ -85,13 +85,13 @@ describe('Deliverables page', () => {
     const row1 = screen.getByText('Design mockups').closest('tr');
     expect(within(row1).getByText('Website Revamp')).toBeInTheDocument();
     expect(within(row1).getByText('Tim Team')).toBeInTheDocument();
-    expect(within(row1).getByText('in_progress')).toBeInTheDocument();
+    expect(within(row1).getByText('In progress')).toBeInTheDocument();
     expect(within(row1).getByText(FUTURE)).toBeInTheDocument();
 
     const row2 = screen.getByText('Migrate schema').closest('tr');
     expect(within(row2).getByText('Data Migration')).toBeInTheDocument();
     expect(within(row2).getByText('Unassigned')).toBeInTheDocument();
-    expect(within(row2).getByText('not_started')).toBeInTheDocument();
+    expect(within(row2).getByText('Not started')).toBeInTheDocument();
   });
 
   it('links each title to its project', async () => {
@@ -136,13 +136,13 @@ describe('Deliverables page', () => {
   describe('filters', () => {
     it('re-queries with the selected status', async () => {
       const user = userEvent.setup();
-      mockList([]);
+      mockList([deliverable1]);
       renderWithAuth(<Deliverables />, { user: viewerUser });
-      await screen.findByText('No deliverables found');
+      await screen.findByText('Design mockups');
       deliverablesService.listDeliverables.mockClear();
 
       await user.click(screen.getByLabelText('Status'));
-      await user.click(await screen.findByRole('option', { name: 'blocked' }));
+      await user.click(await screen.findByRole('option', { name: 'Blocked' }));
 
       await waitFor(() => {
         expect(deliverablesService.listDeliverables).toHaveBeenCalledWith(
@@ -153,9 +153,9 @@ describe('Deliverables page', () => {
 
     it('re-queries with the search text', async () => {
       const user = userEvent.setup();
-      mockList([]);
+      mockList([deliverable1]);
       renderWithAuth(<Deliverables />, { user: viewerUser });
-      await screen.findByText('No deliverables found');
+      await screen.findByText('Design mockups');
       deliverablesService.listDeliverables.mockClear();
 
       await user.type(screen.getByLabelText('Search'), 'schema');
@@ -169,9 +169,9 @@ describe('Deliverables page', () => {
 
     it('re-queries with the selected project', async () => {
       const user = userEvent.setup();
-      mockList([]);
+      mockList([deliverable1]);
       renderWithAuth(<Deliverables />, { user: viewerUser });
-      await screen.findByText('No deliverables found');
+      await screen.findByText('Design mockups');
       deliverablesService.listDeliverables.mockClear();
 
       await user.click(screen.getByLabelText('Project'));
@@ -188,20 +188,34 @@ describe('Deliverables page', () => {
       usersService.listUsers.mockResolvedValue({
         users: [{ id: 4, name: 'Tim Team', role: 'team_member', is_active: true }],
       });
-      mockList([]);
+      mockList([deliverable1]);
       renderWithAuth(<Deliverables />, { user: adminUser });
-      await screen.findByText('No deliverables found');
+      await screen.findByText('Design mockups');
 
       expect(await screen.findByLabelText('Owner')).toBeInTheDocument();
     });
 
     it('does not request users or show the owner filter for non-admins', async () => {
-      mockList([]);
+      mockList([deliverable3]);
       renderWithAuth(<Deliverables />, { user: memberUser });
-      await screen.findByText('No deliverables found');
+      await screen.findByText('Archive old data');
 
       expect(usersService.listUsers).not.toHaveBeenCalled();
       expect(screen.queryByLabelText('Owner')).not.toBeInTheDocument();
+    });
+
+    it('keeps the filter toolbar reachable when a filter matches nothing', async () => {
+      const user = userEvent.setup();
+      mockList([deliverable1]);
+      renderWithAuth(<Deliverables />, { user: viewerUser });
+      await screen.findByText('Design mockups');
+
+      mockList([]);
+      await user.type(screen.getByLabelText('Search'), 'zzz');
+
+      expect(await screen.findByText('No deliverables match these filters.')).toBeInTheDocument();
+      // The user must still be able to clear the filter that emptied the table.
+      expect(screen.getByLabelText('Search')).toHaveValue('zzz');
     });
   });
 
@@ -218,14 +232,14 @@ describe('Deliverables page', () => {
       ).toBeInTheDocument();
 
       await user.click(within(row).getByRole('combobox'));
-      await user.click(await screen.findByRole('option', { name: 'completed' }));
+      await user.click(await screen.findByRole('option', { name: 'Completed' }));
 
       await waitFor(() => {
         expect(deliverablesService.updateDeliverable).toHaveBeenCalledWith(deliverable1.id, {
           status: 'completed',
         });
       });
-      expect(within(row).getByRole('combobox')).toHaveTextContent('completed');
+      expect(within(row).getByRole('combobox')).toHaveTextContent('Completed');
     });
 
     it('does not let a team member change a deliverable owned by someone else', async () => {
@@ -235,7 +249,7 @@ describe('Deliverables page', () => {
 
       const row = screen.getByText('Archive old data').closest('tr');
       expect(within(row).queryByRole('combobox')).not.toBeInTheDocument();
-      expect(within(row).getByText('completed')).toBeInTheDocument();
+      expect(within(row).getByText('Completed')).toBeInTheDocument();
     });
 
     it('lets the project manager of the deliverable’s project change its status', async () => {
@@ -268,7 +282,7 @@ describe('Deliverables page', () => {
 
       const row = screen.getByText('Design mockups').closest('tr');
       expect(within(row).queryByRole('combobox')).not.toBeInTheDocument();
-      expect(within(row).getByText('in_progress')).toBeInTheDocument();
+      expect(within(row).getByText('In progress')).toBeInTheDocument();
     });
 
     it('surfaces an error when the status update fails', async () => {
@@ -280,7 +294,7 @@ describe('Deliverables page', () => {
 
       const row = screen.getByText('Design mockups').closest('tr');
       await user.click(within(row).getByRole('combobox'));
-      await user.click(await screen.findByRole('option', { name: 'blocked' }));
+      await user.click(await screen.findByRole('option', { name: 'Blocked' }));
 
       expect(await screen.findByText('Closed project')).toBeInTheDocument();
     });

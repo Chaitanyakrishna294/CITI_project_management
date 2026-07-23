@@ -7,7 +7,7 @@
  *   Desktop (md+)  — permanent sidebar alongside a multi-column layout
  *   Tablet/Mobile  — hamburger button opening a temporary drawer, single column
  */
-import { useState } from 'react';
+import { cloneElement, useState } from 'react';
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -44,7 +44,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useColorMode } from '../contexts/ColorModeContext';
 import { DISPLAY_FONT } from '../theme';
 
-const DRAWER_WIDTH = 232;
+const DRAWER_WIDTH = 220;
 // Slimmer than MUI's 64px default: the bar holds utilities, not identity.
 const BAR_HEIGHT = 56;
 // Data reads better in a measured column than edge-to-edge on wide monitors.
@@ -121,7 +121,7 @@ export default function AppLayout() {
 
   const navigation = (
     <>
-      {/* The brand lives at the head of the navy column, not in the top bar —
+      {/* The brand lives at the head of the ink column, not in the top bar —
           the sidebar runs floor to ceiling and owns the app's identity, so
           the bar above the content can stay a quiet utility strip. */}
       <Box sx={{ px: 2.5, pt: 3, pb: 2 }}>
@@ -150,7 +150,7 @@ export default function AppLayout() {
           Project Management
         </Typography>
       </Box>
-      {/* Solid deep-navy sidebar (glow-up brief v2 §2): the app's silhouette
+      {/* Solid ink sidebar: the app's silhouette
           comes from this surface, not from a tinted white list. Colours ride
           the --color-sidebar-* custom properties so dark mode retunes them
           without any component logic. */}
@@ -167,7 +167,7 @@ export default function AppLayout() {
                   pt: sectionIndex === 0 ? 2 : 3,
                   pb: 1,
                   color: 'var(--color-sidebar-text)',
-                  opacity: 0.62,
+                  opacity: 0.75,
                   fontWeight: 600,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
@@ -196,25 +196,31 @@ export default function AppLayout() {
                   borderRadius: 1,
                   mb: 0.5,
                   color: 'var(--color-sidebar-text)',
-                  '& .MuiListItemIcon-root': { color: 'inherit', opacity: 0.75 },
+                  '& .MuiListItemIcon-root': { color: 'inherit', opacity: 0.85 },
                   '&:hover': { bgcolor: 'var(--color-sidebar-hover)' },
-                  // The navy focus ring vanishes on navy — use the cream.
+                  // A dark focus ring vanishes on ink — use the porcelain plate tone.
                   '&:focus-visible': {
                     outline: '2px solid var(--color-sidebar-active-bg)',
                     outlineOffset: -2,
                   },
-                  // Active state: warm off-white plate with navy text — an
-                  // inversion, not a tint, so the current page is unmissable.
+                  // Active state: porcelain plate with ink text plus the
+                  // viridian thread notch — "current" wears the same mark
+                  // here as it does on focus rings and row hover.
                   '&.active': {
                     bgcolor: 'var(--color-sidebar-active-bg)',
                     color: 'var(--color-sidebar-active-text)',
+                    boxShadow: 'inset 3px 0 0 var(--color-thread)',
                     '& .MuiListItemIcon-root': { color: 'inherit', opacity: 1 },
                     '& .MuiListItemText-primary': { fontWeight: 600 },
                     '&:hover': { bgcolor: 'var(--color-sidebar-active-bg)' },
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
+                {/* 18px icons at 32px inset: quieter than body text, per the
+                    tightened rail. */}
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  {cloneElement(item.icon, { size: 18 })}
+                </ListItemIcon>
                 <ListItemText primary={item.label} primaryTypographyProps={{ variant: 'body2' }} />
               </ListItemButton>
             ))}
@@ -251,7 +257,7 @@ export default function AppLayout() {
       </Box>
       {/* Sleek chrome: the bar sits beside the sidebar (not over it), rides
           the canvas colour with a hairline rule, and carries only utilities —
-          the navy column owns the brand. */}
+          the ink column owns the brand. */}
       <AppBar
         position="fixed"
         color="inherit"
@@ -287,10 +293,12 @@ export default function AppLayout() {
               '&:hover': { bgcolor: (t) => alpha(t.palette.primary.main, 0.06) },
               border: '1px solid',
               borderColor: 'divider',
-              borderRadius: 999, // the one rounded silhouette in the chrome
+              borderRadius: 999, // pill — same silhouette as buttons
               px: 1.5,
               flexGrow: 1,
               maxWidth: 400,
+              // The thread marks the live control while typing.
+              '&:focus-within': { borderColor: 'var(--color-thread)' },
             }}
           >
             <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -328,7 +336,8 @@ export default function AppLayout() {
                   color="text.secondary"
                   sx={{ lineHeight: 1, display: 'block' }}
                 >
-                  {user.role}
+                  {/* Human words, not enum values: project_manager → Project manager. */}
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1).replaceAll('_', ' ')}
                 </Typography>
               </Box>
               <Tooltip title="Logout">

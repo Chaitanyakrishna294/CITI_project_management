@@ -37,7 +37,8 @@ describe('Dashboard', () => {
     renderDashboard();
     // req/UI_UX §15 specifies skeleton loaders for the loading state.
     expect(screen.getByRole('status', { name: 'Loading dashboard' })).toBeInTheDocument();
-    expect(screen.queryByText('Welcome back, Jamie Doe (admin)')).not.toBeInTheDocument();
+    // The ledger-count summary only renders once data has arrived.
+    expect(screen.queryByText(/budget consumed/)).not.toBeInTheDocument();
   });
 
   it('offers a retry from the error state that re-issues the request', async () => {
@@ -53,7 +54,7 @@ describe('Dashboard', () => {
     projectsService.listProjects.mockResolvedValue({ projects: [] });
     await interaction.click(screen.getByRole('button', { name: /retry/i }));
 
-    await screen.findByText('Welcome back, Jamie Doe (admin)');
+    await screen.findByText('0 projects · 0 at risk · 0% budget consumed');
     expect(projectsService.listProjects).toHaveBeenCalledTimes(2);
   });
 

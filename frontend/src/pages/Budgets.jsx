@@ -14,7 +14,6 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Grid from '@mui/material/Grid';
 import LinearProgress from '@mui/material/LinearProgress';
 import Link from '@mui/material/Link';
 import Snackbar from '@mui/material/Snackbar';
@@ -23,7 +22,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 
 import DataTable from '../components/DataTable';
-import KpiCard from '../components/KpiCard';
+import StatBand from '../components/StatBand';
 import { EmptyState, ErrorState, LoadingState } from '../components/PageState';
 import * as budgetsService from '../services/budgetsService';
 import { useAuth } from '../contexts/AuthContext';
@@ -244,10 +243,12 @@ export default function Budgets() {
         const over = pct > 100;
         return (
           <Box>
+            {/* Colour-coded state, so semantic tokens only: success within
+                plan, error over — never ink primary or the thread. */}
             <LinearProgress
               variant="determinate"
               value={Math.min(pct, 100)}
-              color={over ? 'error' : 'primary'}
+              color={over ? 'error' : 'success'}
               sx={{ height: 8, borderRadius: 4, mb: 0.5 }}
             />
             <Typography variant="caption" color={over ? 'error' : 'text.secondary'}>
@@ -307,31 +308,27 @@ export default function Budgets() {
 
       {!loading && !error && budgets.length > 0 && (
         <>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={6} md={3}>
-              <KpiCard label="Total Planned" value={formatCurrency(totals.planned, totalsCurrency)} />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <KpiCard label="Total Actual Spend" value={formatCurrency(totals.actual, totalsCurrency)} />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              {/* Overrun is an error signal, matching the row-level Remaining
-                  column; the ochre accent stays reserved for the dashboard's
-                  attention tier (glow-up brief v2 §2). */}
-              <KpiCard
-                label="Total Remaining"
-                value={formatCurrency(totals.remaining, totalsCurrency)}
-                valueColor={totals.remaining < 0 ? 'error.main' : undefined}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <KpiCard
-                label="Over Budget"
-                value={totals.over}
-                valueColor={totals.over > 0 ? 'error.main' : undefined}
-              />
-            </Grid>
-          </Grid>
+          {/* Overrun is an error signal, matching the row-level Remaining
+              column; the ochre accent stays reserved for the dashboard's
+              attention tier (glow-up brief v2 §2). */}
+          <Box sx={{ mb: 3 }}>
+            <StatBand
+              items={[
+                { label: 'Total Planned', value: formatCurrency(totals.planned, totalsCurrency) },
+                { label: 'Total Actual Spend', value: formatCurrency(totals.actual, totalsCurrency) },
+                {
+                  label: 'Total Remaining',
+                  value: formatCurrency(totals.remaining, totalsCurrency),
+                  valueColor: totals.remaining < 0 ? 'error.main' : undefined,
+                },
+                {
+                  label: 'Over Budget',
+                  value: totals.over,
+                  valueColor: totals.over > 0 ? 'error.main' : undefined,
+                },
+              ]}
+            />
+          </Box>
 
           <DataTable
             title="Project Budgets"

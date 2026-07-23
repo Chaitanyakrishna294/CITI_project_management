@@ -84,7 +84,7 @@ describe('ProjectDetails page', () => {
     renderDetails({ user: adminUser });
 
     expect(await screen.findByText('Website Revamp')).toBeInTheDocument();
-    expect(screen.getByText('active')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.getByText(/Pat Manager/)).toBeInTheDocument();
     expect(screen.getByText(/Marketing/)).toBeInTheDocument();
     expect(screen.getByText('Revamp the corporate website.')).toBeInTheDocument();

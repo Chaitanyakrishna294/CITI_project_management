@@ -19,7 +19,7 @@ import BudgetPanel from '../components/BudgetPanel';
 import StatusIndicator from '../components/StatusIndicator';
 import { ErrorState, LoadingState } from '../components/PageState';
 import { BackIcon } from '../components/icons';
-import { DISPLAY_FONT, useStatusColors } from '../theme';
+import { DISPLAY_FONT, useStatusColors, statusLabel } from '../theme';
 
 export default function ProjectDetails() {
   const { id } = useParams();
@@ -79,21 +79,33 @@ export default function ProjectDetails() {
         Back to Projects
       </Button>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-        {/* Detail titles carry the same display serif as list screens (glow-up
-            brief v2 §2) — body, data and buttons stay Inter. */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {/* Detail titles echo PageHeader: the display serif at 32px — body,
+            data and buttons stay Inter. */}
         <Typography
           variant="h4"
           component="h1"
-          sx={{ fontFamily: DISPLAY_FONT, fontWeight: 600, letterSpacing: '-0.01em' }}
+          sx={{
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 600,
+            fontSize: 32,
+            letterSpacing: '-0.015em',
+            lineHeight: 1.2,
+          }}
         >
           {project.name}
         </Typography>
         {/* Status meaning is a dot + label (glow-up brief v2 §2); filled Chips
             stay reserved for counts/badges. */}
-        <StatusIndicator color={statusColors[project.status] || 'grey.500'} label={project.status} />
+        <StatusIndicator color={statusColors[project.status] || 'grey.500'} label={statusLabel(project.status)} />
       </Box>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      {/* The thread dash under the title, matching PageHeader. Decorative
+          only — the title itself carries the semantics. */}
+      <Box
+        aria-hidden
+        sx={{ width: 36, height: 3, borderRadius: 2, bgcolor: 'var(--color-thread)', mt: 1.25 }}
+      />
+      <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mt: 1.25 }}>
         Manager: {project.manager_name} {project.department ? `· ${project.department}` : ''}
       </Typography>
       {project.description && (

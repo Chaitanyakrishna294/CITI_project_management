@@ -104,14 +104,14 @@ describe('Projects page', () => {
     const row1 = screen.getByText('Website Revamp').closest('tr');
     expect(within(row1).getByText('Pat Manager')).toBeInTheDocument();
     expect(within(row1).getByText('Marketing')).toBeInTheDocument();
-    expect(within(row1).getByText('active')).toBeInTheDocument();
+    expect(within(row1).getByText('Active')).toBeInTheDocument();
     expect(within(row1).getByText('2026-01-01')).toBeInTheDocument();
     expect(within(row1).getByText('2026-06-01')).toBeInTheDocument();
 
     const row2 = screen.getByText('Data Migration').closest('tr');
     expect(within(row2).getByText('Other Manager')).toBeInTheDocument();
     expect(within(row2).getByText('IT')).toBeInTheDocument();
-    expect(within(row2).getByText('archived')).toBeInTheDocument();
+    expect(within(row2).getByText('Archived')).toBeInTheDocument();
   });
 
   describe('budget column', () => {
@@ -225,7 +225,7 @@ describe('Projects page', () => {
       projectsService.listProjects.mockClear();
 
       await user.click(screen.getByLabelText('Status'));
-      const option = await screen.findByRole('option', { name: 'active' });
+      const option = await screen.findByRole('option', { name: 'Active' });
       await user.click(option);
 
       await waitFor(() => {

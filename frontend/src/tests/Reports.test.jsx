@@ -172,7 +172,7 @@ describe('Reports page', () => {
       const first = row('Website Revamp');
       expect(within(first).getByText('Pat Manager')).toBeInTheDocument();
       expect(within(first).getByText('Marketing')).toBeInTheDocument();
-      expect(within(first).getByText('active')).toBeInTheDocument();
+      expect(within(first).getByText('Active')).toBeInTheDocument();
       expect(within(first).getByText('2026-01-01')).toBeInTheDocument();
       expect(within(first).getByText('2099-12-31')).toBeInTheDocument();
 

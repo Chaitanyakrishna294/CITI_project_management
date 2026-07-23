@@ -29,7 +29,7 @@ import ConfirmDialog from './ConfirmDialog';
 import StatusIndicator from './StatusIndicator';
 import { EmptyState, ErrorState, LoadingState } from './PageState';
 import { EmptyWorkIllustration } from './illustrations';
-import { useStatusColors } from '../theme';
+import { useStatusColors, statusLabel } from '../theme';
 
 const STATUSES = ['not_started', 'in_progress', 'blocked', 'completed'];
 
@@ -194,12 +194,12 @@ export default function DeliverablesPanel({ project, canManage }) {
                         select size="small" value={d.status}
                         onChange={(e) => handleStatusChange(d, e.target.value)}
                       >
-                        {STATUSES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                        {STATUSES.map((s) => <MenuItem key={s} value={s}>{statusLabel(s)}</MenuItem>)}
                       </TextField>
                     ) : (
                       // Status meaning is a dot + label (glow-up brief v2 §2);
                       // filled Chips stay reserved for counts/badges.
-                      <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={d.status} />
+                      <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={statusLabel(d.status)} />
                     )}
                   </TableCell>
                   <TableCell align="right">

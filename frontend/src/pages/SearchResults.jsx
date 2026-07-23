@@ -11,6 +11,7 @@ import { useSearchParams, Link as RouterLink } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
@@ -24,9 +25,20 @@ import { EmptyDataIllustration } from '../components/illustrations';
 import * as projectsService from '../services/projectsService';
 import * as deliverablesService from '../services/deliverablesService';
 import * as resourcesService from '../services/resourcesService';
-import { useStatusColors } from '../theme';
+import { useStatusColors, statusLabel } from '../theme';
 
 const EMPTY_RESULTS = { projects: [], deliverables: [], resources: [] };
+
+// Ledger-caps section heading (matches the DataTable header voice): the DOM
+// text stays as written — uppercase is CSS-only, so accessible names hold.
+const SECTION_HEADING_SX = {
+  display: 'block',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  color: 'text.secondary',
+  lineHeight: 2,
+};
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
@@ -105,9 +117,14 @@ export default function SearchResults() {
       )}
 
       {results && total > 0 && (
-        <>
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>Projects ({results.projects.length})</Typography>
+        // One continuous Paper — the three result sets read as sections of a
+        // single report, divided by hairline rules (Ink & Porcelain: fewer
+        // surfaces, more structure).
+        <Paper>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="overline" component="h2" sx={SECTION_HEADING_SX}>
+              Projects · {results.projects.length}
+            </Typography>
             <List dense>
               {results.projects.map((p) => (
                 <ListItem key={p.id} disableGutters>
@@ -115,17 +132,21 @@ export default function SearchResults() {
                     primary={<Link component={RouterLink} to={`/projects/${p.id}`}>{p.name}</Link>}
                     secondary={`${p.manager_name} · ${p.department || 'No department'}`}
                   />
-                  <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={p.status} />
+                  <StatusIndicator color={statusColors[p.status] || 'grey.500'} label={statusLabel(p.status)} />
                 </ListItem>
               ))}
               {results.projects.length === 0 && (
                 <Typography variant="body2" color="text.secondary">No matching projects.</Typography>
               )}
             </List>
-          </Paper>
+          </Box>
 
-          <Paper sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>Deliverables ({results.deliverables.length})</Typography>
+          <Divider />
+
+          <Box sx={{ p: 2 }}>
+            <Typography variant="overline" component="h2" sx={SECTION_HEADING_SX}>
+              Deliverables · {results.deliverables.length}
+            </Typography>
             <List dense>
               {results.deliverables.map((d) => (
                 <ListItem key={d.id} disableGutters>
@@ -133,17 +154,21 @@ export default function SearchResults() {
                     primary={<Link component={RouterLink} to={`/projects/${d.project_id}`}>{d.title}</Link>}
                     secondary={`Owner: ${d.owner_name || 'Unassigned'}${d.due_date ? ` · Due ${d.due_date}` : ''}`}
                   />
-                  <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={d.status} />
+                  <StatusIndicator color={statusColors[d.status] || 'grey.500'} label={statusLabel(d.status)} />
                 </ListItem>
               ))}
               {results.deliverables.length === 0 && (
                 <Typography variant="body2" color="text.secondary">No matching deliverables.</Typography>
               )}
             </List>
-          </Paper>
+          </Box>
 
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Resources ({results.resources.length})</Typography>
+          <Divider />
+
+          <Box sx={{ p: 2 }}>
+            <Typography variant="overline" component="h2" sx={SECTION_HEADING_SX}>
+              Resources · {results.resources.length}
+            </Typography>
             <List dense>
               {results.resources.map((r) => (
                 <ListItem key={r.id} disableGutters>
@@ -160,8 +185,8 @@ export default function SearchResults() {
                 <Typography variant="body2" color="text.secondary">No matching resources.</Typography>
               )}
             </List>
-          </Paper>
-        </>
+          </Box>
+        </Paper>
       )}
     </Box>
   );

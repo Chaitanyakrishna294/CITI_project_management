@@ -19,36 +19,44 @@ export default function PageHeader({ title, summary, action }) {
         alignItems: 'flex-start',
         flexWrap: 'wrap',
         gap: 2,
-        mb: 3,
-        pb: 2,
-        // The masthead rule: one hairline closes the identity zone before
-        // tools and data begin — every screen opens the same way.
-        borderBottom: '1px solid',
-        borderColor: 'divider',
+        mb: 3.5,
       }}
     >
       <Box>
-        {/* Page titles are the ONE place the display serif appears (glow-up
-            brief v2 §2) — body, data and buttons stay Inter. */}
+        {/* Page titles are the ONE place the display serif appears —
+            body, data and buttons stay Inter. */}
         <Typography
           variant="h4"
           component="h1"
           sx={{
             fontFamily: DISPLAY_FONT,
             fontWeight: 600,
-            fontSize: 30,
+            fontSize: 32,
             letterSpacing: '-0.015em',
             lineHeight: 1.2,
           }}
         >
           {title}
         </Typography>
+        {/* The thread dash: HEX's signature mark — a short viridian stroke
+            under the title instead of a full-width rule. Decorative only;
+            the title itself carries the semantics. */}
+        <Box
+          aria-hidden
+          sx={{
+            width: 36,
+            height: 3,
+            borderRadius: 2,
+            bgcolor: 'var(--color-thread)',
+            mt: 1.25,
+          }}
+        />
         {summary && (
           <Typography
             variant="body2"
             color="text.secondary"
             // Counts line up digit-for-digit as data loads and changes.
-            sx={{ mt: 0.75, fontVariantNumeric: 'tabular-nums' }}
+            sx={{ mt: 1.25, fontVariantNumeric: 'tabular-nums' }}
           >
             {summary}
           </Typography>

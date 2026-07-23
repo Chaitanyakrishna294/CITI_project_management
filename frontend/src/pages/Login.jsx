@@ -40,7 +40,7 @@ export default function Login() {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', bgcolor: 'background.default' }}>
-      {/* Brand panel: the same navy column the app shell uses, so the first
+      {/* Brand panel: the same ink column the app shell uses, so the first
           screen and every screen after it share one silhouette. Hidden on
           small screens, where the card carries the product name instead. */}
       <Box
@@ -52,8 +52,30 @@ export default function Login() {
           maxWidth: 480,
           bgcolor: 'var(--color-sidebar-bg)',
           p: 6,
+          // The cropped X: a fragment of the wordmark bleeding off the
+          // corner — most of it lives in negative space. Clipped here.
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute',
+            right: -72,
+            bottom: -120,
+            fontFamily: DISPLAY_FONT,
+            fontWeight: 600,
+            fontSize: 420,
+            lineHeight: 1,
+            color: 'var(--color-sidebar-active-bg)',
+            opacity: 0.07,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        >
+          X
+        </Box>
         <Box>
           <Typography
             component="div"
@@ -95,7 +117,10 @@ export default function Login() {
           p: 2,
         }}
       >
-      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider', borderRadius :5,borderBottom: '2px solid', borderBottomColor: 'primary.main' }}>
+      {/* borderRadius stays the user-set 20px, pinned as a string so the new
+          theme shape scale (sx numbers multiply by shape.borderRadius) can't
+          drift it. */}
+      <Paper elevation={0} sx={{ p: 4, width: 360, border: '1px solid', borderColor: 'divider', borderRadius: '20px' }}>
         {/* The sign-in heading keeps the display-serif identity (glow-up brief
             v2 §2); the product name below also serves small screens, where
             the brand panel is hidden. */}
@@ -159,7 +184,7 @@ export default function Login() {
             disabled={submitting}
             sx={{ mt: 3 }}
           >
-            {submitting ? 'Signing in…' : 'Login'}
+            {submitting ? 'Signing in…' : 'Sign in'}
           </Button>
           <Typography
             variant="caption"

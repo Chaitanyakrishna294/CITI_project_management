@@ -4,7 +4,7 @@
  * Accounts are provisioned here by an Admin — the platform intentionally has
  * no self-service sign-up (req/Application_Flow.md §10). The "Add user" dialog
  * follows the 21st.dev Origin UI sign-up dialog pattern (icon badge, described
- * fields, single clear action) translated into the Harbor Blue MUI tokens, and
+ * fields, single clear action) translated into the Ink & Porcelain tokens, and
  * the role picker spells out what each role can do so the RBAC decision is
  * made with the permission model in view.
  */
@@ -261,11 +261,10 @@ export default function UserManagement() {
         />
       )}
 
-      {/* Create user dialog — Origin UI sign-up pattern in Harbor Blue. */}
+      {/* Create user dialog — Origin UI sign-up pattern in Ink & Porcelain. */}
       <Dialog
         open={createOpen}
         onClose={() => !creating && setCreateOpen(false)}
-        fullWidth
         maxWidth="xs"
         aria-labelledby="add-user-title"
       >
@@ -355,7 +354,6 @@ export default function UserManagement() {
       <Dialog
         open={!!editUser}
         onClose={() => !saving && setEditUser(null)}
-        fullWidth
         maxWidth="xs"
         aria-labelledby="edit-user-title"
       >
