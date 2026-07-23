@@ -235,7 +235,11 @@ export default function AppLayout() {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+    // isolation:isolate makes the shell its own stacking context, so the
+    // zIndex:-1 watermark paints ABOVE this Box's canvas colour but below
+    // all content — without it, negative z sinks beneath the background
+    // and the mark never shows.
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default', isolation: 'isolate' }}>
       {/* App-wide watermark: the brand X cropped by the viewport's own
           corner, pinned at zIndex -1 — above the canvas colour, below every
           surface. Paper-white on the cream canvas reads as an emboss (a
