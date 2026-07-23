@@ -1,0 +1,4 @@
+Project Name,Desc,Status,manager_id,Dept,Start,End
+Vendor Portal Revamp,Refresh the supplier-facing portal,active,1,Engineering,2026-08-01,2026-12-15
+Data Warehouse Cleanup,Retire duplicate marts and views,delayed,1,IT,2026-06-10,2026-11-30
+Branch Kiosk Rollout,Self-service kiosks for 12 branches,completed,1,Operations,2026-01-05,2026-06-20
