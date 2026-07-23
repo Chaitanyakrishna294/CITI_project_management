@@ -43,6 +43,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useColorMode } from '../contexts/ColorModeContext';
 import { DISPLAY_FONT } from '../theme';
+import BrandMark from './BrandMark';
 
 const DRAWER_WIDTH = 220;
 // Slimmer than MUI's 64px default: the bar holds utilities, not identity.
@@ -150,30 +151,9 @@ export default function AppLayout() {
           Project Management
         </Typography>
       </Box>
-      {/* The cropped X again — the login panel's mark echoed as a whisper at
-          the foot of the rail. The inset-0 wrapper clips the overhang so the
-          glyph can't add scroll; nav items (positioned) paint over it. */}
-      <Box
-        aria-hidden
-        sx={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            left: -48,
-            bottom: -70,
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 600,
-            fontSize: 220,
-            lineHeight: 1,
-            color: 'var(--color-sidebar-active-bg)',
-            opacity: 0.05,
-            userSelect: 'none',
-          }}
-        >
-          X
-        </Box>
-      </Box>
+      {/* The brand mark echoed as a whisper at the foot of the rail; nav
+          items (positioned) paint over it. */}
+      <BrandMark size={220} opacity={0.05} glyphSx={{ left: -48, bottom: -70 }} />
       {/* Solid ink sidebar: the app's silhouette
           comes from this surface, not from a tinted white list. Colours ride
           the --color-sidebar-* custom properties so dark mode retunes them
@@ -256,6 +236,16 @@ export default function AppLayout() {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* App-wide watermark: the brand X cropped by the viewport's own
+          corner, pinned at zIndex -1 — above the canvas colour, below every
+          surface, so it only lives in the page's negative space. */}
+      <BrandMark
+        fixed
+        size={480}
+        opacity={0.04}
+        color="text.primary"
+        glyphSx={{ right: -90, bottom: -140 }}
+      />
       {/* WCAG 2.4.1 bypass block: first focusable element jumps past the bar
           and sidebar. Visually hidden until keyboard focus lands on it. */}
       <Box

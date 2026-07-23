@@ -10,6 +10,7 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import { ShowPasswordIcon, HidePasswordIcon } from '../components/icons';
 import { DISPLAY_FONT } from '../theme';
+import BrandMark from '../components/BrandMark';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
@@ -58,24 +59,7 @@ export default function Login() {
           overflow: 'hidden',
         }}
       >
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute',
-            right: -110,
-            bottom: -170,
-            fontFamily: DISPLAY_FONT,
-            fontWeight: 600,
-            fontSize: 580,
-            lineHeight: 1,
-            color: 'var(--color-sidebar-active-bg)',
-            opacity: 0.11,
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
-          X
-        </Box>
+        <BrandMark size={580} opacity={0.11} glyphSx={{ right: -110, bottom: -170 }} />
         <Box>
           <Typography
             component="div"

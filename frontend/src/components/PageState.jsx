@@ -18,6 +18,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { EmptyInboxIcon } from './icons';
+import BrandMark from './BrandMark';
 
 /**
  * Skeleton placeholder shaped like the content it stands in for, so the layout
@@ -64,7 +65,10 @@ export function LoadingState({ variant = 'table', rows = 5, label = 'Loading…'
  */
 export function EmptyState({ title = 'Nothing here yet', message, actionLabel, onAction, icon }) {
   return (
-    <Paper sx={{ p: 6, textAlign: 'center' }}>
+    <Paper sx={{ p: 6, textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      {/* An empty screen is the one guaranteed negative space — the brand X
+          holds the corner while the CTA does the talking. */}
+      <BrandMark size={280} opacity={0.04} color="text.primary" glyphSx={{ right: -60, top: -80 }} />
       <Box sx={{ color: 'text.disabled', mb: 2 }}>
         {icon || <EmptyInboxIcon size={56} />}
       </Box>
